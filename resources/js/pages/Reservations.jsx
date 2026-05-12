@@ -61,6 +61,19 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
         return [...list].sort((a, b) => (a.date < b.date ? 1 : -1));
     }, [reservations, isManager, user.id, filter]);
 
+    const competingRequestCounts = useMemo(() => {
+        const counts = new Map();
+
+        reservations
+            .filter((reservation) => reservation.status === RES_STATUS.PENDING)
+            .forEach((reservation) => {
+                const key = `${reservation.vehicleId}:${reservation.date}`;
+                counts.set(key, (counts.get(key) || 0) + 1);
+            });
+
+        return counts;
+    }, [reservations]);
+
     const handleNewClose = () => {
         setNewOpen(false);
         setPreselectVehicle(null);
@@ -125,6 +138,8 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                         <tbody>
                             {visibleReservations.map((r, i) => {
                                 const vehicle = vehicles.find((v) => v.id === r.vehicleId);
+                                const competingKey = `${r.vehicleId}:${r.date}`;
+                                const competingCount = competingRequestCounts.get(competingKey) || 0;
                                 return (
                                     <tr
                                         key={r.id}
@@ -143,6 +158,16 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                                         <td className="px-5 py-4 text-ink">{r.trip}</td>
                                         <td className="px-5 py-4 font-mono text-xs text-muted">
                                             {r.date}
+                                            {isManager &&
+                                                r.status === RES_STATUS.PENDING &&
+                                                competingCount > 1 && (
+                                                    <p className="mt-1 text-[11px] font-medium text-warn">
+                                                        {t.reservations.competingRequests.replace(
+                                                            '{n}',
+                                                            competingCount
+                                                        )}
+                                                    </p>
+                                                )}
                                         </td>
                                         <td className="px-5 py-4">
                                             <p className="text-ink">{r.requestedByName}</p>
