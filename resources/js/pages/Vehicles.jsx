@@ -406,6 +406,168 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
     );
 }
 
+const CATEGORY_OPTIONS = ['van', 'car', 'bus'];
+
+const EMPTY_VEHICLE = {
+    brand: '',
+    model: '',
+    category: 'van',
+    plate: '',
+    seats: 5,
+    currentKm: 0,
+    operational: true,
+    nextInspection: '',
+    insuranceCompany: '',
+    insuranceType: '',
+    insuranceRenewal: '',
+    responsible: '',
+    phone: '',
+    base: '',
+};
+
+function VehicleFormModal({ vehicle, onClose, onSave }) {
+    const { t } = useI18n();
+    const isEditing = !!(vehicle && vehicle.id);
+    const [form, setForm] = useState(EMPTY_VEHICLE);
+
+    React.useEffect(() => {
+        if (vehicle) {
+            setForm({ ...EMPTY_VEHICLE, ...vehicle });
+        }
+    }, [vehicle]);
+
+    if (!vehicle) return null;
+
+    const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+    const submit = (e) => {
+        e.preventDefault();
+        onSave({
+            ...form,
+            seats: Number(form.seats) || 0,
+            currentKm: Number(form.currentKm) || 0,
+        });
+    };
+
+    return (
+        <Modal
+            open={true}
+            onClose={onClose}
+            title={isEditing ? t.common.edit : t.vehicles.newVehicle}
+            maxWidth="max-w-2xl"
+        >
+            <form onSubmit={submit} className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={t.vehicles.brand || 'Marca'}>
+                        <Input
+                            value={form.brand}
+                            onChange={(e) => update('brand', e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.vehicles.model || 'Modelo'}>
+                        <Input
+                            value={form.model}
+                            onChange={(e) => update('model', e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.vehicles.plate}>
+                        <Input
+                            value={form.plate}
+                            onChange={(e) => update('plate', e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.vehicles.category || 'Categoria'}>
+                        <Select
+                            value={form.category}
+                            onChange={(e) => update('category', e.target.value)}
+                        >
+                            {CATEGORY_OPTIONS.map((c) => (
+                                <option key={c} value={c}>
+                                    {c}
+                                </option>
+                            ))}
+                        </Select>
+                    </Field>
+                    <Field label={t.vehicles.seats}>
+                        <Input
+                            type="number"
+                            min="0"
+                            value={form.seats}
+                            onChange={(e) => update('seats', e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.vehicles.km}>
+                        <Input
+                            type="number"
+                            min="0"
+                            value={form.currentKm}
+                            onChange={(e) => update('currentKm', e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.vehicles.base || 'Base'}>
+                        <Input
+                            value={form.base}
+                            onChange={(e) => update('base', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.responsible || 'Responsável'}>
+                        <Input
+                            value={form.responsible}
+                            onChange={(e) => update('responsible', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.phone || 'Telefone'}>
+                        <Input
+                            value={form.phone}
+                            onChange={(e) => update('phone', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.nextInspection}>
+                        <Input
+                            type="date"
+                            value={form.nextInspection || ''}
+                            onChange={(e) => update('nextInspection', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.insuranceCompany}>
+                        <Input
+                            value={form.insuranceCompany}
+                            onChange={(e) => update('insuranceCompany', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.insuranceType}>
+                        <Input
+                            value={form.insuranceType}
+                            onChange={(e) => update('insuranceType', e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.vehicles.insuranceRenewal}>
+                        <Input
+                            type="date"
+                            value={form.insuranceRenewal || ''}
+                            onChange={(e) => update('insuranceRenewal', e.target.value)}
+                        />
+                    </Field>
+                </div>
+
+                <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
+                    <Button type="button" variant="secondary" onClick={onClose}>
+                        {t.common.cancel}
+                    </Button>
+                    <Button type="submit" variant="accent">
+                        {t.common.save}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+    );
+}
+
 function Row({ label, value, mono = false }) {
     return (
         <div>
