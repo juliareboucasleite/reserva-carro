@@ -13,6 +13,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/{any}', function () {
+    return view('welcome');
+})->where('any', '^(?!api|auth|locations).*$');
+
 Route::prefix('auth')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);

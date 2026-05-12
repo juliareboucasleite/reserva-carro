@@ -2,6 +2,17 @@ import './bootstrap';
 import '../css/app.css';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import {
+    BrowserRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes,
+    useLocation,
+    useNavigate,
+    useOutletContext,
+    useParams,
+} from 'react-router-dom';
 import { I18nProvider } from './i18n/I18nContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
@@ -16,6 +27,15 @@ import Damages from './pages/Damages';
 import Maintenance from './pages/Maintenance';
 import Admin from './pages/Admin';
 
+const VIEW_TO_PATH = {
+    dashboard: '/painel',
+    vehicles: '/viaturas',
+    reservations: '/reservas',
+    damages: '/avarias',
+    maintenance: '/manutencao',
+    admin: '/admin',
+};
+
 function buildTripFromSearch(search) {
     if (!search) return '';
     const pickup = search.pickupLocationData?.label || search.pickupLocation || '';
@@ -26,20 +46,17 @@ function buildTripFromSearch(search) {
 
 function AppShell() {
     const { isAuthenticated, authLoading } = useAuth();
-    const [publicPage, setPublicPage] = useState('landing');
-    const [publicModal, setPublicModal] = useState(null);
+    const navigate = useNavigate();
+    const location = useLocation();
     const [publicSearch, setPublicSearch] = useState(null);
-    const [showPublic, setShowPublic] = useState(false);
-    const [view, setView] = useState('dashboard');
-    const [vehicleId, setVehicleId] = useState(null);
+    const [publicModalOpen, setPublicModalOpen] = useState(false);
     const [reservationDraft, setReservationDraft] = useState(null);
 
     useEffect(() => {
-        if (isAuthenticated && reservationDraft) {
-            setShowPublic(false);
-            setView('reservations');
+        if (isAuthenticated && reservationDraft && location.pathname !== '/reservas') {
+            navigate('/reservas');
         }
-    }, [isAuthenticated, reservationDraft]);
+    }, [isAuthenticated, reservationDraft, location.pathname, navigate]);
 
     if (authLoading) {
         return (
@@ -48,6 +65,11 @@ function AppShell() {
             </div>
         );
     }
+
+    const handleSearch = (search) => {
+        setPublicSearch(search);
+        navigate('/pesquisa');
+    };
 
     const startPublicReservation = (vehicle) => {
         if (vehicle) {
@@ -59,110 +81,136 @@ function AppShell() {
             });
         }
         if (isAuthenticated) {
-            setShowPublic(false);
-            setView('reservations');
+            navigate('/reservas');
         } else {
-            setPublicModal('login');
+            setPublicModalOpen(true);
         }
-    };
-
-    const goToDashboard = () => {
-        setShowPublic(false);
-        setPublicModal(null);
-    };
-
-    const handlePublicLoginCta = () => {
-        if (isAuthenticated) {
-            goToDashboard();
-        } else {
-            setPublicModal('login');
-        }
-    };
-
-    if (!isAuthenticated || showPublic) {
-        return (
-            <>
-                {publicPage === 'search-results' ? (
-                    <SearchResultsPage
-                        search={publicSearch}
-                        onBack={() => setPublicPage('landing')}
-                        onGoToLogin={handlePublicLoginCta}
-                        onStartReservation={startPublicReservation}
-                        isAuthenticated={isAuthenticated}
-                        onGoToDashboard={goToDashboard}
-                    />
-                ) : (
-                    <LandingPage
-                        onGoToLogin={handlePublicLoginCta}
-                        onStartReservation={startPublicReservation}
-                        onSearch={(search) => {
-                            setPublicSearch(search);
-                            setPublicPage('search-results');
-                        }}
-                        isAuthenticated={isAuthenticated}
-                        onGoToDashboard={goToDashboard}
-                    />
-                )}
-                {publicModal === 'login' && !isAuthenticated && (
-                    <Login onBack={() => setPublicModal(null)} />
-                )}
-            </>
-        );
-    }
-
-    const navigate = (next) => {
-        setView(next);
-        setVehicleId(null);
-        if (next !== 'reservations') setReservationDraft(null);
-    };
-
-    const openVehicle = (id) => {
-        setVehicleId(id);
-        setView('vehicle-detail');
     };
 
     const requestReservation = (id) => {
         setReservationDraft({ vehicleId: id, startDate: '', endDate: '', trip: '' });
-        setView('reservations');
+        navigate('/reservas');
     };
 
-    let content;
-    if (view === 'dashboard') content = <Dashboard />;
-    else if (view === 'vehicles')
-        content = (
-            <Vehicles onOpenVehicle={openVehicle} onRequestReservation={requestReservation} />
-        );
-    else if (view === 'vehicle-detail')
-        content = (
-            <VehicleDetail
-                vehicleId={vehicleId}
-                onBack={() => navigate('vehicles')}
-                onRequestReservation={requestReservation}
-            />
-        );
-    else if (view === 'reservations')
-        content = (
-            <Reservations
-                initialDraft={reservationDraft}
-                onClearInitial={() => setReservationDraft(null)}
-            />
-        );
-    else if (view === 'damages') content = <Damages />;
-    else if (view === 'maintenance') content = <Maintenance />;
-    else if (view === 'admin') content = <Admin />;
-    else content = <Dashboard />;
+    const handlePublicLoginCta = () => {
+        if (isAuthenticated) navigate('/painel');
+        else setPublicModalOpen(true);
+    };
 
-    const sidebarView = view === 'vehicle-detail' ? 'vehicles' : view;
+    const publicProps = {
+        isAuthenticated,
+        onGoToDashboard: () => navigate('/painel'),
+        onGoToLogin: handlePublicLoginCta,
+        onStartReservation: startPublicReservation,
+    };
+
+    return (
+        <>
+            <Routes>
+                <Route
+                    path="/"
+                    element={<LandingPage {...publicProps} onSearch={handleSearch} />}
+                />
+                <Route
+                    path="/pesquisa"
+                    element={
+                        <SearchResultsPage
+                            {...publicProps}
+                            search={publicSearch}
+                            onBack={() => navigate('/')}
+                        />
+                    }
+                />
+
+                <Route
+                    element={
+                        isAuthenticated ? (
+                            <ProtectedLayout
+                                requestReservation={requestReservation}
+                                reservationDraft={reservationDraft}
+                                clearReservationDraft={() => setReservationDraft(null)}
+                            />
+                        ) : (
+                            <Navigate to="/" replace />
+                        )
+                    }
+                >
+                    <Route path="/painel" element={<Dashboard />} />
+                    <Route path="/viaturas" element={<VehiclesRoute />} />
+                    <Route path="/viaturas/:id" element={<VehicleDetailRoute />} />
+                    <Route path="/reservas" element={<ReservationsRoute />} />
+                    <Route path="/avarias" element={<Damages />} />
+                    <Route path="/manutencao" element={<Maintenance />} />
+                    <Route path="/admin" element={<Admin />} />
+                </Route>
+
+                <Route
+                    path="*"
+                    element={<Navigate to={isAuthenticated ? '/painel' : '/'} replace />}
+                />
+            </Routes>
+
+            {publicModalOpen && !isAuthenticated && (
+                <Login onBack={() => setPublicModalOpen(false)} />
+            )}
+        </>
+    );
+}
+
+function ProtectedLayout({ requestReservation, reservationDraft, clearReservationDraft }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const currentView = (() => {
+        if (location.pathname.startsWith('/viaturas')) return 'vehicles';
+        if (location.pathname === '/painel') return 'dashboard';
+        if (location.pathname === '/reservas') return 'reservations';
+        if (location.pathname === '/avarias') return 'damages';
+        if (location.pathname === '/manutencao') return 'maintenance';
+        if (location.pathname === '/admin') return 'admin';
+        return 'dashboard';
+    })();
+
+    const onNavigate = (view) => navigate(VIEW_TO_PATH[view] || '/painel');
 
     return (
         <DashboardLayout
-            currentView={sidebarView}
-            onNavigate={navigate}
-            onGoToPublic={() => setShowPublic(true)}
+            currentView={currentView}
+            onNavigate={onNavigate}
+            onGoToPublic={() => navigate('/')}
         >
-            {content}
+            <Outlet context={{ requestReservation, reservationDraft, clearReservationDraft }} />
         </DashboardLayout>
     );
+}
+
+function VehiclesRoute() {
+    const navigate = useNavigate();
+    const { requestReservation } = useOutletContext();
+    return (
+        <Vehicles
+            onOpenVehicle={(id) => navigate(`/viaturas/${id}`)}
+            onRequestReservation={requestReservation}
+        />
+    );
+}
+
+function VehicleDetailRoute() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const { requestReservation } = useOutletContext();
+    return (
+        <VehicleDetail
+            vehicleId={Number(id)}
+            onBack={() => navigate('/viaturas')}
+            onRequestReservation={requestReservation}
+        />
+    );
+}
+
+function ReservationsRoute() {
+    const { reservationDraft, clearReservationDraft } = useOutletContext();
+    return <Reservations initialDraft={reservationDraft} onClearInitial={clearReservationDraft} />;
 }
 
 const rootElement = document.getElementById('app');
@@ -173,7 +221,9 @@ if (rootElement) {
             <I18nProvider>
                 <AuthProvider>
                     <DataProvider>
-                        <AppShell />
+                        <BrowserRouter>
+                            <AppShell />
+                        </BrowserRouter>
                     </DataProvider>
                 </AuthProvider>
             </I18nProvider>
