@@ -140,35 +140,7 @@ const INITIAL_VEHICLES = [
     }),
 ];
 
-const INITIAL_MAINTENANCE = [
-    {
-        id: 1,
-        vehicleId: 3,
-        date: '2026-04-22',
-        type: 'Revisão geral',
-        downtimeDays: 4,
-        notes: 'Substituição de correia de distribuição e óleos.',
-        cost: 720,
-    },
-    {
-        id: 2,
-        vehicleId: 1,
-        date: '2026-02-14',
-        type: 'Pneus',
-        downtimeDays: 1,
-        notes: 'Quatro pneus novos.',
-        cost: 480,
-    },
-    {
-        id: 3,
-        vehicleId: 6,
-        date: '2026-03-08',
-        type: 'Travões',
-        downtimeDays: 2,
-        notes: 'Pastilhas e discos dianteiros.',
-        cost: 950,
-    },
-];
+const INITIAL_MAINTENANCE = [];
 
 const RES_STATUS = {
     PENDING: 'pending',
@@ -178,62 +150,7 @@ const RES_STATUS = {
     CHECKED_OUT: 'checked_out',
 };
 
-const INITIAL_RESERVATIONS = [
-    {
-        id: 1,
-        vehicleId: 2,
-        requestedBy: 1,
-        requestedByName: 'Ana Pereira',
-        team: 'Operações Lisboa',
-        trip: 'Lisboa → Porto (transporte de equipa)',
-        date: '2026-05-18',
-        status: RES_STATUS.APPROVED,
-        driver: null,
-        startKm: null,
-        endKm: null,
-        startNotes: '',
-        endNotes: '',
-        startMedia: [],
-        endMedia: [],
-        operationalConfirmed: null,
-    },
-    {
-        id: 2,
-        vehicleId: 4,
-        requestedBy: 1,
-        requestedByName: 'Ana Pereira',
-        team: 'Operações Lisboa',
-        trip: 'Lisboa → Faro',
-        date: '2026-05-22',
-        status: RES_STATUS.PENDING,
-        driver: null,
-        startKm: null,
-        endKm: null,
-        startNotes: '',
-        endNotes: '',
-        startMedia: [],
-        endMedia: [],
-        operationalConfirmed: null,
-    },
-    {
-        id: 3,
-        vehicleId: 1,
-        requestedBy: 1,
-        requestedByName: 'Ana Pereira',
-        team: 'Operações Lisboa',
-        trip: 'Lisboa → Coimbra',
-        date: '2026-05-12',
-        status: RES_STATUS.CHECKED_IN,
-        driver: 'Ana Pereira',
-        startKm: 84210,
-        endKm: null,
-        startNotes: 'Sem danos visíveis. Depósito cheio.',
-        endNotes: '',
-        startMedia: [],
-        endMedia: [],
-        operationalConfirmed: null,
-    },
-];
+const INITIAL_RESERVATIONS = [];
 
 export const NOTIFICATION_TYPES = {
     RESERVATION_REQUESTED: 'reservation_requested',
