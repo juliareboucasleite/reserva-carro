@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { useData } from '../contexts/DataContext';
 import { CarIcon, GaugeIcon, PhoneIcon, PinIcon, SeatIcon } from '../components/Icons';
 import VehicleMedia from '../components/VehicleMedia';
+import heroBackground from '../../img/carros/suv-japones-em-uma-estrada-cenica-de-outono-nas-montanhas_470606-1277.png';
 
 const LOCATION_OPTIONS = [
     'Lisboa',
@@ -97,7 +98,6 @@ function getMonthGrid(baseDate) {
 export default function LandingPage({ onGoToLogin }) {
     const { t, lang, setLang } = useI18n();
     const { vehicles } = useData();
-    const heroVehicle = vehicles[0];
     const widgetRef = useRef(null);
     const resultsRef = useRef(null);
 
@@ -214,8 +214,8 @@ export default function LandingPage({ onGoToLogin }) {
             <section className="relative overflow-visible">
                 <div className="absolute inset-0">
                     <img
-                        src={heroVehicle?.image}
-                        alt={heroVehicle?.name || 'Frota'}
+                        src={heroBackground}
+                        alt="SUV em estrada de montanha"
                         className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.55),rgba(15,23,42,0.78))]" />
