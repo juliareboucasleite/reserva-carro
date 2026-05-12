@@ -13,6 +13,7 @@ class ReservationMedia extends Model
     protected $fillable = [
         'reservation_id',
         'phase',
+        'angle',
         'path',
         'mime',
         'original_name',
