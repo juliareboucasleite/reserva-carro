@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState } from 'react';
-import fordTransitImg from '../../img/carros/IMG_55143-large.jpg';
-import vwTransporterImg from '../../img/carros/OIP.jpg';
-import mitsubishiL400Img from '../../img/carros/images.jpg';
-import opelVivaroImg from '../../img/carros/mGp_mDd22dAjx1vX50jrDmWutgmARkdpJwoI9xL_f3LeAc3uKhEqiz80ClopqOradAKI25S6ns7vcSbjRbBVpCgyjEK4lW4-n-cNlTt4uWp_h6xIDT-yXw06L_X4I3YBjwz-l91FYA4Rk52jr8GmSKaPNT-0-BZkbqK-HyfdrvAgplGduFXl_xVHXPhL-8b4.jpg';
-import opelBenficaImg from '../../img/carros/opel-combo-5d-front-view.jpg';
-import marcopoloIvecoImg from '../../img/carros/Rz5Vr-BJQawK9ZxvqglNZ1spDGetkm2N7CIv_4432g0EhIQtFDocjbo7Ma7myji2vhPzisYyNk1fKdyTcwmEKpuniNEPVBslDebNjrtNdt2Gmx9KZEfRPlkygEIi1DGWcjDGbhv2B56tt2894fYSxgrYfpPTsBj8aXB3pbC8Pq2zB0dlzuZqBzQLuMHUW3Vp.jpg';
-import manBusImg from '../../img/carros/Wu5DWKkAfGc6LvdyHt_YHdT9NyX_flcLcCczrHBQKSsgxClnIbqix-F-4donbdP-ikwh0PX_uy8T3uHjtnVZ8NWc0conXxK53eQnZ9ZZzn6tF1vfHOHjWcP3o3-Vj6fHze-aZM78arUO5ZHnVa9txdfkxqqq4JWLxgWET3Iw4dA_qpGpu6OE8cGzSLdpM0Jn.jpg';
+import fordTransitImg from '../../img/carros/ford-transit.webp';
+import vwTransporterImg from '../../img/carros/vw-transporter.webp';
+import mitsubishiL400Img from '../../img/carros/mitsubishi-l400.webp';
+import opelVivaroImg from '../../img/carros/opel-vivaro.webp';
+import opelBenficaImg from '../../img/carros/opel-benfica.webp';
+import marcopoloIvecoImg from '../../img/carros/marcopolo-iveco.webp';
+import manBusImg from '../../img/carros/man-bus.webp';
 
 const DataContext = createContext(null);
 
