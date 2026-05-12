@@ -195,6 +195,7 @@ const INITIAL_RESERVATIONS = [
         endNotes: '',
         startMedia: [],
         endMedia: [],
+        operationalConfirmed: null,
     },
     {
         id: 2,
@@ -212,6 +213,7 @@ const INITIAL_RESERVATIONS = [
         endNotes: '',
         startMedia: [],
         endMedia: [],
+        operationalConfirmed: null,
     },
     {
         id: 3,
@@ -229,6 +231,7 @@ const INITIAL_RESERVATIONS = [
         endNotes: '',
         startMedia: [],
         endMedia: [],
+        operationalConfirmed: null,
     },
 ];
 
@@ -317,6 +320,7 @@ export function DataProvider({ children }) {
             id,
             startMedia: res.startMedia || [],
             endMedia: res.endMedia || [],
+            operationalConfirmed: null,
         };
         setReservations((prev) => [...prev, created]);
         const vehicle = vehicles.find((v) => v.id === created.vehicleId);

@@ -40,6 +40,7 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     const [newOpen, setNewOpen] = useState(!!initialNewVehicleId);
     const [checkInId, setCheckInId] = useState(null);
     const [checkOutId, setCheckOutId] = useState(null);
+    const [confirmOpId, setConfirmOpId] = useState(null);
     const [preselectVehicle, setPreselectVehicle] = useState(initialNewVehicleId || null);
     const [maintenancePrefill, setMaintenancePrefill] = useState(null);
 
@@ -163,6 +164,7 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                                                 }
                                                 onCheckIn={() => setCheckInId(r.id)}
                                                 onCheckOut={() => setCheckOutId(r.id)}
+                                                onConfirmOp={() => setConfirmOpId(r.id)}
                                             />
                                         </td>
                                     </tr>
@@ -221,7 +223,7 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkOutId)?.vehicleId
                 )}
-                onConfirm={({ endKm, endNotes, operational, endMedia }) => {
+                onConfirm={({ endKm, endNotes, endMedia }) => {
                     const r = reservations.find((x) => x.id === checkOutId);
                     updateReservation(checkOutId, {
                         endKm,
@@ -230,14 +232,33 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                         status: RES_STATUS.CHECKED_OUT,
                     });
                     if (r) updateVehicleKm(r.vehicleId, endKm);
+                    setCheckOutId(null);
+                }}
+            />
+
+            <OperationalConfirmModal
+                reservation={confirmOpId ? reservations.find((r) => r.id === confirmOpId) : null}
+                vehicle={
+                    confirmOpId
+                        ? vehicles.find(
+                              (v) =>
+                                  v.id ===
+                                  reservations.find((r) => r.id === confirmOpId)?.vehicleId
+                          )
+                        : null
+                }
+                onClose={() => setConfirmOpId(null)}
+                onConfirm={(operational) => {
+                    const r = reservations.find((x) => x.id === confirmOpId);
+                    updateReservation(confirmOpId, { operationalConfirmed: operational });
                     if (!operational && r) {
                         setVehicleOperational(r.vehicleId, false);
                         setMaintenancePrefill({
                             vehicleId: r.vehicleId,
-                            notes: endNotes || '',
+                            notes: r.endNotes || '',
                         });
                     }
-                    setCheckOutId(null);
+                    setConfirmOpId(null);
                 }}
             />
 
@@ -265,7 +286,16 @@ function Th({ children, right }) {
     );
 }
 
-function Actions({ reservation, isManager, isOwner, onApprove, onReject, onCheckIn, onCheckOut }) {
+function Actions({
+    reservation,
+    isManager,
+    isOwner,
+    onApprove,
+    onReject,
+    onCheckIn,
+    onCheckOut,
+    onConfirmOp,
+}) {
     const { t } = useI18n();
     const r = reservation;
 
@@ -294,6 +324,17 @@ function Actions({ reservation, isManager, isOwner, onApprove, onReject, onCheck
         return (
             <Button size="sm" variant="secondary" onClick={onCheckOut}>
                 {t.reservations.doCheckOut_short}
+            </Button>
+        );
+    }
+    if (
+        isManager &&
+        r.status === RES_STATUS.CHECKED_OUT &&
+        r.operationalConfirmed === null
+    ) {
+        return (
+            <Button size="sm" variant="accent" onClick={onConfirmOp}>
+                {t.reservations.confirmOperational}
             </Button>
         );
     }
@@ -433,6 +474,48 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
     );
 }
 
+function OperationalConfirmModal({ reservation, vehicle, onClose, onConfirm }) {
+    const { t } = useI18n();
+    if (!reservation || !vehicle) return null;
+
+    return (
+        <Modal
+            open={true}
+            onClose={onClose}
+            kicker={`${vehicle.name} · ${vehicle.plate}`}
+            title={t.reservations.confirmOperationalTitle}
+        >
+            <p className="mb-5 text-sm text-muted">{t.reservations.confirmOperationalSubtitle}</p>
+
+            {reservation.endNotes && (
+                <div className="mb-5 rounded-md border border-border-soft bg-paper-2/60 px-3 py-2">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                        {t.reservations.endNotes}
+                    </p>
+                    <p className="mt-1 text-xs text-ink">{reservation.endNotes}</p>
+                </div>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                    type="button"
+                    onClick={() => onConfirm(true)}
+                    className="rounded-md border border-positive bg-positive-soft px-4 py-3 text-sm font-medium text-positive transition hover:bg-positive-soft/80"
+                >
+                    {t.reservations.operationalYes}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onConfirm(false)}
+                    className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger transition hover:bg-danger-soft/80"
+                >
+                    {t.reservations.operationalNo}
+                </button>
+            </div>
+        </Modal>
+    );
+}
+
 function CheckoutMaintenanceModal({ prefill, onClose, onCreate }) {
     const { t } = useI18n();
     const { vehicles } = useData();
@@ -529,14 +612,12 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     const { t } = useI18n();
     const [endKm, setEndKm] = useState('');
     const [endNotes, setEndNotes] = useState('');
-    const [operational, setOperational] = useState(true);
     const [endMedia, setEndMedia] = useState([]);
 
     React.useEffect(() => {
         if (open) {
             setEndKm(reservation?.startKm || '');
             setEndNotes('');
-            setOperational(true);
             setEndMedia([]);
         }
     }, [open, reservation]);
@@ -545,7 +626,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
 
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ endKm: Number(endKm), endNotes, operational, endMedia });
+        onConfirm({ endKm: Number(endKm), endNotes, endMedia });
     };
 
     return (
@@ -573,43 +654,9 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                     />
                 </Field>
                 <MediaUpload value={endMedia} onChange={setEndMedia} />
-                <div>
-                    <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                        {t.reservations.operationalQuestion}
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                        <label
-                            className={`cursor-pointer rounded-md border p-3 text-sm transition ${
-                                operational
-                                    ? 'border-accent bg-accent-soft text-accent-deep'
-                                    : 'border-border hover:border-ink/30'
-                            }`}
-                        >
-                            <input
-                                type="radio"
-                                checked={operational}
-                                onChange={() => setOperational(true)}
-                                className="hidden"
-                            />
-                            {t.reservations.operationalYes}
-                        </label>
-                        <label
-                            className={`cursor-pointer rounded-md border p-3 text-sm transition ${
-                                !operational
-                                    ? 'border-danger bg-danger-soft text-danger'
-                                    : 'border-border hover:border-ink/30'
-                            }`}
-                        >
-                            <input
-                                type="radio"
-                                checked={!operational}
-                                onChange={() => setOperational(false)}
-                                className="hidden"
-                            />
-                            {t.reservations.operationalNo}
-                        </label>
-                    </div>
-                </div>
+                <p className="rounded-md border border-border-soft bg-paper-2/60 px-3 py-2 text-[11px] text-muted">
+                    {t.reservations.operationalManagerHint}
+                </p>
                 <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}
