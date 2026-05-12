@@ -12,6 +12,7 @@ import {
     Select,
     Modal,
     MediaUpload,
+    AngleUpload,
 } from '../components/ui';
 import { PlusIcon, CheckIcon, XIcon, WrenchIcon } from '../components/Icons';
 
@@ -186,12 +187,12 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkInId)?.vehicleId
                 )}
-                onConfirm={async ({ driver, startKm, startNotes, startMedia }) => {
+                onConfirm={async ({ driver, startKm, startNotes, angleMedia }) => {
                     await checkInReservation(checkInId, {
                         driver,
                         startKm,
                         startNotes,
-                        files: (startMedia || []).map((m) => m.file).filter(Boolean),
+                        angleMedia,
                     });
                     setCheckInId(null);
                 }}
@@ -393,22 +394,31 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
     const [driver, setDriver] = useState('');
     const [startKm, setStartKm] = useState('');
     const [startNotes, setStartNotes] = useState('');
-    const [startMedia, setStartMedia] = useState([]);
+    const [angleMedia, setAngleMedia] = useState({});
 
     React.useEffect(() => {
         if (open) {
             setDriver(defaultDriver || '');
             setStartKm(vehicle?.currentKm || '');
             setStartNotes('');
-            setStartMedia([]);
+            setAngleMedia({});
         }
     }, [open, defaultDriver, vehicle]);
 
     if (!reservation || !vehicle) return null;
 
+    const requiredAngles = ['front', 'back', 'left', 'right'];
+    const hasAllAngles = requiredAngles.every((a) => angleMedia[a]?.file);
+
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ driver, startKm: Number(startKm), startNotes, startMedia });
+        if (!hasAllAngles) return;
+        onConfirm({
+            driver,
+            startKm: Number(startKm),
+            startNotes,
+            angleMedia,
+        });
     };
 
     return (
@@ -438,12 +448,12 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
                         placeholder={t.reservations.startNotesPlaceholder}
                     />
                 </Field>
-                <MediaUpload value={startMedia} onChange={setStartMedia} />
+                <AngleUpload value={angleMedia} onChange={setAngleMedia} />
                 <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}
                     </Button>
-                    <Button type="submit" variant="accent">
+                    <Button type="submit" variant="accent" disabled={!hasAllAngles}>
                         {t.reservations.doCheckIn}
                     </Button>
                 </div>

@@ -245,6 +245,124 @@ export function MediaUpload({ value = [], onChange, disabled = false }) {
     );
 }
 
+const ANGLE_KEYS = ['front', 'back', 'right', 'left'];
+
+export function AngleUpload({ value = {}, onChange, disabled = false }) {
+    const { t } = useI18n();
+
+    function pickFile(angle, file) {
+        if (!file) return;
+        if (file.size > MAX_FILE_BYTES) return;
+
+        const current = value[angle];
+        if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl);
+
+        onChange({
+            ...value,
+            [angle]: {
+                file,
+                previewUrl: URL.createObjectURL(file),
+                name: file.name,
+                type: file.type,
+            },
+        });
+    }
+
+    function removeAngle(angle) {
+        const current = value[angle];
+        if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl);
+        const next = { ...value };
+        delete next[angle];
+        onChange(next);
+    }
+
+    return (
+        <div>
+            <p className="text-xs font-medium text-ink">{t.media.angles.title}</p>
+            <p className="mt-1 text-[11px] text-muted">{t.media.angles.hint}</p>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {ANGLE_KEYS.map((angle) => {
+                    const entry = value[angle];
+                    return (
+                        <AngleSlot
+                            key={angle}
+                            label={t.media.angles[angle]}
+                            replaceLabel={t.media.angles.replace}
+                            removeLabel={t.media.remove}
+                            entry={entry}
+                            disabled={disabled}
+                            onPick={(file) => pickFile(angle, file)}
+                            onRemove={() => removeAngle(angle)}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function AngleSlot({ label, replaceLabel, removeLabel, entry, disabled, onPick, onRemove }) {
+    const inputRef = useRef(null);
+
+    return (
+        <div>
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted">
+                {label}
+            </p>
+
+            <div className="relative aspect-square overflow-hidden rounded-md border border-border-soft bg-paper-2">
+                {entry ? (
+                    <>
+                        <img
+                            src={entry.previewUrl}
+                            alt={label}
+                            className="h-full w-full object-cover"
+                        />
+                        {!disabled && (
+                            <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => inputRef.current?.click()}
+                                    className="rounded-md bg-paper/90 px-2 py-0.5 text-[10px] font-medium text-ink"
+                                >
+                                    {replaceLabel}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onRemove}
+                                    className="rounded-md bg-danger/90 px-2 py-0.5 text-[10px] font-medium text-white"
+                                >
+                                    <TrashIcon className="h-3 w-3" />
+                                </button>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        disabled={disabled}
+                        className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted transition hover:bg-paper-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <CameraIcon className="h-5 w-5" />
+                        <span className="text-[10px]">+</span>
+                    </button>
+                )}
+            </div>
+
+            <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPick(e.target.files?.[0])}
+                disabled={disabled}
+            />
+        </div>
+    );
+}
+
 export function MediaGallery({ items = [] }) {
     const { t } = useI18n();
 
