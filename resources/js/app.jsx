@@ -15,11 +15,19 @@ import Maintenance from './pages/Maintenance';
 import Admin from './pages/Admin';
 
 function AppShell() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, authLoading } = useAuth();
     const [publicView, setPublicView] = useState('landing');
     const [view, setView] = useState('dashboard');
     const [vehicleId, setVehicleId] = useState(null);
     const [pendingReservationVehicle, setPendingReservationVehicle] = useState(null);
+
+    if (authLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-paper text-ink">
+                <div className="text-sm font-medium">A carregar sessão...</div>
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         if (publicView === 'login') {
