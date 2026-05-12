@@ -133,6 +133,36 @@ export default function LandingPage({ onGoToLogin }) {
         return () => document.removeEventListener('mousedown', handlePointerDown);
     }, []);
 
+    useEffect(() => {
+        if (activePanel !== 'pickupLocation' && activePanel !== 'returnLocation') return;
+
+        const source = activePanel === 'returnLocation' ? returnLocation : pickupLocation;
+        let cancelled = false;
+
+        const timeoutId = window.setTimeout(async () => {
+            setLocationLoading(true);
+            try {
+                const response = await searchLocations(source, 'all');
+                if (!cancelled) {
+                    setLocationOptions(response.options || []);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setLocationOptions([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLocationLoading(false);
+                }
+            }
+        }, 180);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [activePanel, pickupLocation, returnLocation]);
+
     const matchingLocations = useMemo(() => {
         const source = activePanel === 'returnLocation' ? returnLocation : pickupLocation;
         const query = source.trim().toLowerCase();
@@ -143,27 +173,11 @@ export default function LandingPage({ onGoToLogin }) {
     }, [activePanel, pickupLocation, returnLocation]);
 
     const filtered = useMemo(() => {
-        const pickupQuery = pickupLocation.trim().toLowerCase();
-        const returnQuery = returnLocation.trim().toLowerCase();
-
         return vehicles.filter((vehicle) => {
             if (statusFilter === 'available' && vehicle.availability === 'inoperational') return false;
-
-            const haystack = [
-                vehicle.name,
-                vehicle.brand,
-                vehicle.model,
-                vehicle.base,
-            ]
-                .join(' ')
-                .toLowerCase();
-
-            if (pickupQuery && !haystack.includes(pickupQuery)) return false;
-            if (returnQuery && !haystack.includes(returnQuery)) return false;
-
             return true;
         });
-    }, [pickupLocation, returnLocation, statusFilter, vehicles]);
+    }, [statusFilter, vehicles]);
 
     const searchSummary = [
         pickupLocation ? `Levantamento: ${pickupLocation}` : null,
