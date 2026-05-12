@@ -123,24 +123,33 @@ export function DataProvider({ children }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const fetchVehicles = useCallback(async () => {
+        const { data } = await axios.get('/api/vehicles');
+        setVehicles(data.map(mapVehicle));
+    }, []);
+
     const fetchAll = useCallback(async () => {
-        if (!isAuthenticated) return;
         setLoading(true);
         try {
-            const [v, r, m, n] = await Promise.all([
-                axios.get('/api/vehicles'),
-                axios.get('/api/reservations'),
-                axios.get('/api/maintenance'),
-                axios.get('/api/notifications'),
-            ]);
-            setVehicles(v.data.map(mapVehicle));
-            setReservations(r.data.map(mapReservation));
-            setMaintenance(m.data.map(mapMaintenance));
-            setNotifications(n.data.map(mapNotification));
+            await fetchVehicles();
+            if (isAuthenticated) {
+                const [r, m, n] = await Promise.all([
+                    axios.get('/api/reservations'),
+                    axios.get('/api/maintenance'),
+                    axios.get('/api/notifications'),
+                ]);
+                setReservations(r.data.map(mapReservation));
+                setMaintenance(m.data.map(mapMaintenance));
+                setNotifications(n.data.map(mapNotification));
+            } else {
+                setReservations([]);
+                setMaintenance([]);
+                setNotifications([]);
+            }
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, fetchVehicles]);
 
     const fetchNotifications = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -149,15 +158,8 @@ export function DataProvider({ children }) {
     }, [isAuthenticated]);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchAll();
-        } else {
-            setVehicles([]);
-            setReservations([]);
-            setMaintenance([]);
-            setNotifications([]);
-        }
-    }, [isAuthenticated, fetchAll]);
+        fetchAll();
+    }, [fetchAll]);
 
     useEffect(() => {
         if (!isAuthenticated) return;
