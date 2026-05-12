@@ -9,6 +9,15 @@ export const ROLES = {
     ADMIN: 'admin',
 };
 
+function syncCsrfToken(token) {
+    if (!token) return;
+
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) meta.setAttribute('content', token);
+
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);
@@ -19,6 +28,7 @@ export function AuthProvider({ children }) {
         async function bootstrapAuth() {
             try {
                 const { data } = await axios.get('/auth/me');
+                syncCsrfToken(data.csrf_token);
                 if (!cancelled) setUser(data.user);
             } catch (error) {
                 if (!cancelled) setUser(null);
@@ -41,11 +51,13 @@ export function AuthProvider({ children }) {
             isAuthenticated: !!user,
             async login(credentials) {
                 const { data } = await axios.post('/auth/login', credentials);
+                syncCsrfToken(data.csrf_token);
                 setUser(data.user);
                 return data.user;
             },
             async register(payload) {
                 const { data } = await axios.post('/auth/register', payload);
+                syncCsrfToken(data.csrf_token);
                 setUser(data.user);
                 return data.user;
             },

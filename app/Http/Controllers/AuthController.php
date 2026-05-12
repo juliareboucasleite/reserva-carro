@@ -16,6 +16,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => $this->serializeUser($request->user()),
+            'csrf_token' => csrf_token(),
         ]);
     }
 
@@ -36,6 +37,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $this->serializeUser($request->user()),
+            'csrf_token' => csrf_token(),
         ]);
     }
 
@@ -62,6 +64,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $this->serializeUser($user),
+            'csrf_token' => csrf_token(),
         ], 201);
     }
 
