@@ -18,6 +18,12 @@ import {
 import VehicleMedia from '../components/VehicleMedia';
 import { PlusIcon } from '../components/Icons';
 
+function formatActivePeriod(reservation) {
+    if (!reservation?.startDate) return '';
+    if (!reservation.endDate || reservation.endDate === reservation.startDate) return reservation.startDate;
+    return `${reservation.startDate} → ${reservation.endDate}`;
+}
+
 export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
     const { t } = useI18n();
     const { user } = useAuth();
@@ -102,7 +108,10 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                         <AvailabilityBadge vehicle={v} />
                                         {v.activeReservation && (
                                             <span className="text-[10px] text-muted">
-                                                {[v.activeReservation.requesterName, v.activeReservation.date]
+                                                {[
+                                                    v.activeReservation.requesterName,
+                                                    formatActivePeriod(v.activeReservation),
+                                                ]
                                                     .filter(Boolean)
                                                     .join(' · ')}
                                             </span>
@@ -208,7 +217,10 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                         <AvailabilityBadge vehicle={v} />
                         {v.activeReservation && (
                             <span className="text-xs text-muted">
-                                {[v.activeReservation.requesterName, v.activeReservation.date]
+                                {[
+                                    v.activeReservation.requesterName,
+                                    formatActivePeriod(v.activeReservation),
+                                ]
                                     .filter(Boolean)
                                     .join(' · ')}
                             </span>
@@ -374,7 +386,7 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                                         <div>
                                             <p className="text-sm font-medium text-ink">{r.trip}</p>
                                             <p className="mt-0.5 font-mono text-xs text-muted">
-                                                {r.date} · {r.requestedByName}
+                                                {formatActivePeriod(r)} · {r.requestedByName}
                                             </p>
                                         </div>
                                         <Badge tone={r.status}>

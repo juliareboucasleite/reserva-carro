@@ -27,9 +27,25 @@ const STATUS_LABEL_KEY = {
 const DAMAGE_TYPE_OPTIONS = ['scratch', 'dent', 'crack', 'clip'];
 const DAMAGE_SEVERITY_OPTIONS = ['low', 'high'];
 
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+    if (!aStart || !bStart) return false;
+    const aS = aStart;
+    const aE = aEnd || aStart;
+    const bS = bStart;
+    const bE = bEnd || bStart;
+    return aS <= bE && bS <= aE;
+}
+
+function formatPeriod(startDate, endDate) {
+    if (!startDate) return '';
+    if (!endDate || endDate === startDate) return startDate;
+    return `${startDate} → ${endDate}`;
+}
+
 export default function Reservations({ initialDraft, onClearInitial }) {
     const initialVehicleId = initialDraft?.vehicleId || null;
-    const initialDate = initialDraft?.date || '';
+    const initialStartDate = initialDraft?.startDate || '';
+    const initialEndDate = initialDraft?.endDate || '';
     const initialTrip = initialDraft?.trip || '';
     const { t } = useI18n();
     const { user } = useAuth();
@@ -51,18 +67,20 @@ export default function Reservations({ initialDraft, onClearInitial }) {
     const [checkOutId, setCheckOutId] = useState(null);
     const [confirmOpId, setConfirmOpId] = useState(null);
     const [preselectVehicle, setPreselectVehicle] = useState(initialVehicleId);
-    const [preselectDate, setPreselectDate] = useState(initialDate);
+    const [preselectStartDate, setPreselectStartDate] = useState(initialStartDate);
+    const [preselectEndDate, setPreselectEndDate] = useState(initialEndDate);
     const [preselectTrip, setPreselectTrip] = useState(initialTrip);
     const [maintenancePrefill, setMaintenancePrefill] = useState(null);
 
     React.useEffect(() => {
         if (initialVehicleId) {
             setPreselectVehicle(initialVehicleId);
-            setPreselectDate(initialDate);
+            setPreselectStartDate(initialStartDate);
+            setPreselectEndDate(initialEndDate);
             setPreselectTrip(initialTrip);
             setNewOpen(true);
         }
-    }, [initialVehicleId, initialDate, initialTrip]);
+    }, [initialVehicleId, initialStartDate, initialEndDate, initialTrip]);
 
     const isManager = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
     const subtitle = isManager ? t.reservations.subtitleManager : t.reservations.subtitleDriver;
@@ -72,26 +90,24 @@ export default function Reservations({ initialDraft, onClearInitial }) {
             ? reservations
             : reservations.filter((r) => r.requestedBy === user.id);
         if (filter !== 'all') list = list.filter((r) => r.status === filter);
-        return [...list].sort((a, b) => (a.date < b.date ? 1 : -1));
+        return [...list].sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
     }, [reservations, isManager, user.id, filter]);
 
-    const competingRequestCounts = useMemo(() => {
-        const counts = new Map();
-
-        reservations
-            .filter((reservation) => reservation.status === RES_STATUS.PENDING)
-            .forEach((reservation) => {
-                const key = `${reservation.vehicleId}:${reservation.date}`;
-                counts.set(key, (counts.get(key) || 0) + 1);
-            });
-
-        return counts;
+    const competingCountFor = useMemo(() => {
+        const pending = reservations.filter((r) => r.status === RES_STATUS.PENDING);
+        return (reservation) =>
+            pending.filter(
+                (other) =>
+                    other.vehicleId === reservation.vehicleId &&
+                    rangesOverlap(other.startDate, other.endDate, reservation.startDate, reservation.endDate)
+            ).length;
     }, [reservations]);
 
     const handleNewClose = () => {
         setNewOpen(false);
         setPreselectVehicle(null);
-        setPreselectDate('');
+        setPreselectStartDate('');
+        setPreselectEndDate('');
         setPreselectTrip('');
         if (onClearInitial) onClearInitial();
     };
@@ -145,7 +161,7 @@ export default function Reservations({ initialDraft, onClearInitial }) {
                             <tr>
                                 <Th>{t.reservations.vehicle}</Th>
                                 <Th>{t.reservations.trip}</Th>
-                                <Th>{t.reservations.date}</Th>
+                                <Th>{t.reservations.period}</Th>
                                 <Th>{t.reservations.requestedBy}</Th>
                                 <Th>{t.reservations.status}</Th>
                                 <Th right>{t.common.actions}</Th>
@@ -154,8 +170,7 @@ export default function Reservations({ initialDraft, onClearInitial }) {
                         <tbody>
                             {visibleReservations.map((r, i) => {
                                 const vehicle = vehicles.find((v) => v.id === r.vehicleId);
-                                const competingKey = `${r.vehicleId}:${r.date}`;
-                                const competingCount = competingRequestCounts.get(competingKey) || 0;
+                                const competingCount = competingCountFor(r);
                                 return (
                                     <tr
                                         key={r.id}
@@ -173,7 +188,7 @@ export default function Reservations({ initialDraft, onClearInitial }) {
                                         </td>
                                         <td className="px-5 py-4 text-ink">{r.trip}</td>
                                         <td className="px-5 py-4 font-mono text-xs text-muted">
-                                            {r.date}
+                                            {formatPeriod(r.startDate, r.endDate)}
                                             {isManager &&
                                                 r.status === RES_STATUS.PENDING &&
                                                 competingCount > 1 && (
@@ -218,7 +233,8 @@ export default function Reservations({ initialDraft, onClearInitial }) {
                 open={newOpen}
                 onClose={handleNewClose}
                 preselectVehicle={preselectVehicle}
-                preselectDate={preselectDate}
+                preselectStartDate={preselectStartDate}
+                preselectEndDate={preselectEndDate}
                 preselectTrip={preselectTrip}
                 onCreate={async (payload) => {
                     await addReservation(payload);
@@ -367,25 +383,41 @@ function Actions({
     return <span className="text-xs text-muted">—</span>;
 }
 
-function NewReservationModal({ open, onClose, onCreate, preselectVehicle, preselectDate, preselectTrip }) {
+function NewReservationModal({
+    open,
+    onClose,
+    onCreate,
+    preselectVehicle,
+    preselectStartDate,
+    preselectEndDate,
+    preselectTrip,
+}) {
     const { t } = useI18n();
     const { vehicles } = useData();
     const [vehicleId, setVehicleId] = useState(preselectVehicle || '');
     const [trip, setTrip] = useState(preselectTrip || '');
-    const [date, setDate] = useState(preselectDate || '');
+    const [startDate, setStartDate] = useState(preselectStartDate || '');
+    const [endDate, setEndDate] = useState(preselectEndDate || '');
 
     React.useEffect(() => {
         if (open) {
             setVehicleId(preselectVehicle || '');
             setTrip(preselectTrip || '');
-            setDate(preselectDate || '');
+            setStartDate(preselectStartDate || '');
+            setEndDate(preselectEndDate || '');
         }
-    }, [open, preselectVehicle, preselectDate, preselectTrip]);
+    }, [open, preselectVehicle, preselectStartDate, preselectEndDate, preselectTrip]);
 
     const submit = (e) => {
         e.preventDefault();
-        if (!vehicleId || !trip || !date) return;
-        onCreate({ vehicleId: Number(vehicleId), trip, date });
+        if (!vehicleId || !trip || !startDate) return;
+        const resolvedEnd = endDate && endDate >= startDate ? endDate : startDate;
+        onCreate({
+            vehicleId: Number(vehicleId),
+            trip,
+            startDate,
+            endDate: resolvedEnd,
+        });
     };
 
     const operational = vehicles.filter((v) => v.operational);
@@ -415,14 +447,24 @@ function NewReservationModal({ open, onClose, onCreate, preselectVehicle, presel
                         required
                     />
                 </Field>
-                <Field label={t.reservations.date}>
-                    <Input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        required
-                    />
-                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label={t.reservations.startDate}>
+                        <Input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.reservations.endDate}>
+                        <Input
+                            type="date"
+                            value={endDate}
+                            min={startDate || undefined}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
+                    </Field>
+                </div>
                 <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}

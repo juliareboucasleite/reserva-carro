@@ -53,7 +53,8 @@ function AppShell() {
         if (vehicle) {
             setReservationDraft({
                 vehicleId: vehicle.id,
-                date: publicSearch?.pickupDate || '',
+                startDate: publicSearch?.pickupDate || '',
+                endDate: publicSearch?.returnDate || '',
                 trip: buildTripFromSearch(publicSearch),
             });
         }
@@ -121,7 +122,7 @@ function AppShell() {
     };
 
     const requestReservation = (id) => {
-        setReservationDraft({ vehicleId: id, date: '', trip: '' });
+        setReservationDraft({ vehicleId: id, startDate: '', endDate: '', trip: '' });
         setView('reservations');
     };
 

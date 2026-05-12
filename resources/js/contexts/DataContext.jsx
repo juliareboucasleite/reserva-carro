@@ -35,7 +35,8 @@ function mapVehicle(v) {
         activeReservation: v.active_reservation
             ? {
                   id: v.active_reservation.id,
-                  date: v.active_reservation.date,
+                  startDate: v.active_reservation.start_date || v.active_reservation.date,
+                  endDate: v.active_reservation.end_date || v.active_reservation.date,
                   status: v.active_reservation.status,
                   requesterName: v.active_reservation.requester_name,
                   trip: v.active_reservation.trip,
@@ -88,7 +89,8 @@ function mapReservation(r) {
         requestedByName: r.requester?.name || '',
         team: r.team,
         trip: r.trip,
-        date: r.date,
+        startDate: r.start_date || r.date,
+        endDate: r.end_date || r.date,
         status: r.status,
         driver: r.driver,
         startKm: r.start_km,
@@ -232,7 +234,8 @@ export function DataProvider({ children }) {
         const { data } = await axios.post('/api/reservations', {
             vehicle_id: payload.vehicleId,
             trip: payload.trip,
-            date: payload.date,
+            start_date: payload.startDate,
+            end_date: payload.endDate,
         });
         setReservations((prev) => [mapReservation(data), ...prev]);
         fetchVehicles();
