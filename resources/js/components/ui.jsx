@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../i18n/I18nContext';
 
 export function PageHeader({ title, subtitle, kicker, action }) {
     return (
