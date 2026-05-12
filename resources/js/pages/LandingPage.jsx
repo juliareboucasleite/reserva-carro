@@ -925,7 +925,7 @@ export default function LandingPage({ onGoToLogin }) {
                                 <div className="rounded-2xl bg-paper-2 px-4 py-2 text-sm text-ink">
                                     {routeLoading
                                         ? 'A calcular rota...'
-                                        : `${routeData.distance_km} km · ${routeData.duration_min} min · ${routeData.route_kind}`}
+                                        : `${routeData.distance_km} km · ${routeData.duration_min} min · ${routeData.scope_label || routeData.route_kind}`}
                                 </div>
                             )}
                         </div>
