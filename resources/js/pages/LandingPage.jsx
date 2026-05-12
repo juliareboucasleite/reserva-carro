@@ -96,6 +96,163 @@ function getMonthGrid(baseDate) {
     });
 }
 
+const OFFER_PRESETS = {
+    'ford transit': {
+        categoryLabel: 'Furgão',
+        supplier: 'Europcar',
+        pickupMode: 'Aeroporto (Shuttle)',
+        features: ['Ar Condicionado', 'Diesel', 'Manual', '4 Portas'],
+        protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague no levantamento',
+        price: 48.5,
+        cashback: 6.4,
+        rating: '8.7',
+        luggage: 7,
+    },
+    'vw transporter': {
+        categoryLabel: 'Minivan',
+        supplier: 'Sixt',
+        pickupMode: 'Aeroporto (Balcão)',
+        features: ['Ar Condicionado', 'Diesel', 'Manual', '4 Portas'],
+        protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague agora',
+        price: 44.2,
+        cashback: 5.8,
+        rating: '8.3',
+        luggage: 6,
+    },
+    'mitsubishi l400': {
+        categoryLabel: 'Furgão',
+        supplier: 'Record Go',
+        pickupMode: 'Aeroporto (Meet & Greet)',
+        features: ['Diesel', 'Manual', '4 Portas'],
+        protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague no levantamento',
+        price: 32.9,
+        cashback: 4.1,
+        rating: '7.9',
+        luggage: 5,
+    },
+    'opel vivaro': {
+        categoryLabel: 'Minivan',
+        supplier: 'Drive4Move',
+        pickupMode: 'Aeroporto (Autoatendimento)',
+        features: ['Ar Condicionado', 'Diesel', 'Manual', '4 Portas'],
+        protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague agora',
+        price: 39.6,
+        cashback: 5.2,
+        rating: '8.0',
+        luggage: 6,
+    },
+    'opel benfica': {
+        categoryLabel: 'Especial',
+        supplier: 'Goldcar',
+        pickupMode: 'Cidade',
+        features: ['Ar Condicionado', 'Manual', '4 Portas', 'Gasolina'],
+        protections: ['Seguro de Responsabilidade Civil'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague agora',
+        price: 22.7,
+        cashback: 3.7,
+        rating: '7.5',
+        luggage: 4,
+    },
+    'autocarro marcopolo iveco': {
+        categoryLabel: 'Especial',
+        supplier: 'Autounion',
+        pickupMode: 'Cidade',
+        features: ['Ar Condicionado', 'Diesel', 'Manual'],
+        protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague no levantamento',
+        price: 96.4,
+        cashback: 12.4,
+        rating: '8.8',
+        luggage: 14,
+    },
+    'autocarro man': {
+        categoryLabel: 'Especial',
+        supplier: 'Klass Wagen',
+        pickupMode: 'Cidade',
+        features: ['Ar Condicionado', 'Diesel', 'Manual'],
+        protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague no levantamento',
+        price: 104.9,
+        cashback: 13.8,
+        rating: '9.0',
+        luggage: 16,
+    },
+};
+
+function formatEuro(value) {
+    return new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+    }).format(value);
+}
+
+function normalizeText(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function getOfferPreset(vehicle) {
+    return OFFER_PRESETS[normalizeText(vehicle.name)] || {
+        categoryLabel: vehicle.category === 'bus' ? 'Especial' : vehicle.category === 'van' ? 'Furgão' : 'Compacto',
+        supplier: 'Rent a Star',
+        pickupMode: 'Cidade',
+        features: ['Ar Condicionado', 'Manual'],
+        protections: ['Seguro de Responsabilidade Civil'],
+        included: ['Condutor Adicional'],
+        payment: 'Pague agora',
+        price: 29.9,
+        cashback: 3.9,
+        rating: '8.0',
+        luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
+    };
+}
+
+function buildSearchOffer(vehicle, routeData, pickupLocation, returnLocation) {
+    const preset = getOfferPreset(vehicle);
+    const distanceExtra = routeData?.distance_km ? Math.min(routeData.distance_km * 0.12, 22) : 0;
+    const computedPrice = Number((preset.price + distanceExtra).toFixed(2));
+
+    return {
+        id: vehicle.id,
+        vehicle,
+        title: vehicle.name,
+        subtitle: `ou ${preset.categoryLabel} semelhante`,
+        categoryLabel: preset.categoryLabel,
+        supplier: preset.supplier,
+        pickupMode: preset.pickupMode,
+        features: preset.features,
+        protections: preset.protections,
+        included: preset.included,
+        payment: preset.payment,
+        price: computedPrice,
+        cashback: preset.cashback,
+        rating: preset.rating,
+        luggage: preset.luggage,
+        transmission: preset.features.includes('Automático') ? 'Automático' : 'Manual',
+        mileageLabel: 'Quilometragem ilimitada',
+        fuelLabel: preset.features.includes('Elétrico')
+            ? 'Elétrico'
+            : preset.features.includes('Híbrido')
+            ? 'Híbrido'
+            : preset.features.includes('Diesel')
+            ? 'Diesel'
+            : 'Gasolina',
+        pickupLabel: pickupLocation || vehicle.base || 'Portugal',
+        dropoffLabel: returnLocation || pickupLocation || vehicle.base || 'Portugal',
+    };
+}
+
 export default function LandingPage({ onGoToLogin }) {
     const { t, lang, setLang } = useI18n();
     const { vehicles } = useData();
@@ -119,6 +276,13 @@ export default function LandingPage({ onGoToLogin }) {
     const [returnTime, setReturnTime] = useState('10:00');
     const [residence, setResidence] = useState('Portugal');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+    const [selectedPickupModes, setSelectedPickupModes] = useState([]);
+    const [selectedFeatures, setSelectedFeatures] = useState([]);
+    const [priceMin, setPriceMin] = useState('');
+    const [priceMax, setPriceMax] = useState('');
+    const [sortOrder, setSortOrder] = useState('recommended');
     const [activePanel, setActivePanel] = useState(null);
     const [calendarMonth, setCalendarMonth] = useState(monthStart(today));
 
@@ -165,12 +329,123 @@ export default function LandingPage({ onGoToLogin }) {
 
     const matchingLocations = useMemo(() => locationOptions, [locationOptions]);
 
-    const filtered = useMemo(() => {
-        return vehicles.filter((vehicle) => {
-            if (statusFilter === 'available' && vehicle.availability === 'inoperational') return false;
+    const offers = useMemo(() => {
+        return vehicles.map((vehicle) =>
+            buildSearchOffer(
+                vehicle,
+                routeData,
+                pickupLocationData?.label || pickupLocation,
+                returnLocationData?.label || returnLocation
+            )
+        );
+    }, [vehicles, routeData, pickupLocationData, pickupLocation, returnLocationData, returnLocation]);
+
+    const categoryOptions = useMemo(() => {
+        const groups = new Map();
+        offers.forEach((offer) => {
+            const current = groups.get(offer.categoryLabel) || {
+                label: offer.categoryLabel,
+                count: 0,
+                minPrice: offer.price,
+            };
+            current.count += 1;
+            current.minPrice = Math.min(current.minPrice, offer.price);
+            groups.set(offer.categoryLabel, current);
+        });
+        return [...groups.values()].sort((a, b) => a.minPrice - b.minPrice);
+    }, [offers]);
+
+    const supplierOptions = useMemo(() => {
+        const groups = new Map();
+        offers.forEach((offer) => {
+            const current = groups.get(offer.supplier) || {
+                label: offer.supplier,
+                count: 0,
+                minPrice: offer.price,
+            };
+            current.count += 1;
+            current.minPrice = Math.min(current.minPrice, offer.price);
+            groups.set(offer.supplier, current);
+        });
+        return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+    }, [offers]);
+
+    const pickupModeOptions = useMemo(() => {
+        const groups = new Map();
+        offers.forEach((offer) => {
+            const current = groups.get(offer.pickupMode) || { label: offer.pickupMode, count: 0 };
+            current.count += 1;
+            groups.set(offer.pickupMode, current);
+        });
+        return [...groups.values()];
+    }, [offers]);
+
+    const featureOptions = useMemo(() => {
+        const groups = new Map();
+        offers.forEach((offer) => {
+            offer.features.forEach((feature) => {
+                groups.set(feature, (groups.get(feature) || 0) + 1);
+            });
+        });
+        return [...groups.entries()].map(([label, count]) => ({ label, count }));
+    }, [offers]);
+
+    const minAvailablePrice = useMemo(
+        () => (offers.length ? Math.floor(Math.min(...offers.map((offer) => offer.price))) : 0),
+        [offers]
+    );
+    const maxAvailablePrice = useMemo(
+        () => (offers.length ? Math.ceil(Math.max(...offers.map((offer) => offer.price))) : 0),
+        [offers]
+    );
+
+    useEffect(() => {
+        if (offers.length === 0) return;
+        if (priceMin === '') setPriceMin(String(minAvailablePrice));
+        if (priceMax === '') setPriceMax(String(maxAvailablePrice));
+    }, [offers, priceMin, priceMax, minAvailablePrice, maxAvailablePrice]);
+
+    const filteredOffers = useMemo(() => {
+        let result = offers.filter((offer) => {
+            if (statusFilter === 'available' && offer.vehicle.availability === 'inoperational') return false;
+            if (selectedCategories.length && !selectedCategories.includes(offer.categoryLabel)) return false;
+            if (selectedSuppliers.length && !selectedSuppliers.includes(offer.supplier)) return false;
+            if (selectedPickupModes.length && !selectedPickupModes.includes(offer.pickupMode)) return false;
+            if (selectedFeatures.length && !selectedFeatures.every((feature) => offer.features.includes(feature))) return false;
+            if (priceMin !== '' && offer.price < Number(priceMin)) return false;
+            if (priceMax !== '' && offer.price > Number(priceMax)) return false;
             return true;
         });
-    }, [statusFilter, vehicles]);
+
+        if (sortOrder === 'price_asc') {
+            result = [...result].sort((a, b) => a.price - b.price);
+        } else if (sortOrder === 'price_desc') {
+            result = [...result].sort((a, b) => b.price - a.price);
+        } else if (sortOrder === 'rating') {
+            result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating));
+        } else {
+            result = [...result].sort((a, b) => a.price - b.price || Number(b.rating) - Number(a.rating));
+        }
+
+        return result;
+    }, [
+        offers,
+        statusFilter,
+        selectedCategories,
+        selectedSuppliers,
+        selectedPickupModes,
+        selectedFeatures,
+        priceMin,
+        priceMax,
+        sortOrder,
+    ]);
+
+    const activeFilterTags = [
+        ...selectedCategories.map((value) => ({ type: 'category', value })),
+        ...selectedSuppliers.map((value) => ({ type: 'supplier', value })),
+        ...selectedPickupModes.map((value) => ({ type: 'pickup', value })),
+        ...selectedFeatures.map((value) => ({ type: 'feature', value })),
+    ];
 
     const searchSummary = [
         pickupLocation ? `Levantamento: ${pickupLocation}` : null,
@@ -258,6 +533,23 @@ export default function LandingPage({ onGoToLogin }) {
         }
 
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function toggleFilterValue(setter, value) {
+        setter((current) =>
+            current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+        );
+    }
+
+    function clearSearchFilters() {
+        setSelectedCategories([]);
+        setSelectedSuppliers([]);
+        setSelectedPickupModes([]);
+        setSelectedFeatures([]);
+        setPriceMin(String(minAvailablePrice));
+        setPriceMax(String(maxAvailablePrice));
+        setSortOrder('recommended');
+        setStatusFilter('all');
     }
 
     return (
