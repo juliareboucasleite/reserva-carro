@@ -29,8 +29,9 @@ Route::prefix('locations')->group(function () {
     Route::post('/route', [LocationController::class, 'route']);
 });
 
+Route::get('/api/vehicles', [VehicleController::class, 'index']);
+
 Route::middleware('auth')->prefix('api')->group(function () {
-    Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);
     Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show']);
     Route::patch('/vehicles/{vehicle}', [VehicleController::class, 'update']);
