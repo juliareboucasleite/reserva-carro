@@ -2,7 +2,7 @@ import React from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { PageHeader, Button, Badge } from '../components/ui';
+import { PageHeader, Button, Badge, DueDate } from '../components/ui';
 import VehicleMedia from '../components/VehicleMedia';
 
 export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
@@ -69,8 +69,8 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                 <td className="px-5 py-4 font-mono text-xs text-muted">
                                     {v.currentKm.toLocaleString('pt-PT')}
                                 </td>
-                                <td className="px-5 py-4 font-mono text-xs text-muted">
-                                    {v.nextInspection}
+                                <td className="px-5 py-4">
+                                    <DueDate value={v.nextInspection} />
                                 </td>
                                 <td className="px-5 py-4">
                                     <Badge tone={v.operational ? 'operational' : 'inoperational'}>
@@ -193,7 +193,10 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                             label={t.vehicles.operational}
                             value={v.operational ? t.common.yes : t.common.no}
                         />
-                        <Row label={t.vehicles.nextInspection} value={v.nextInspection} mono />
+                        <Row
+                            label={t.vehicles.nextInspection}
+                            value={<DueDate value={v.nextInspection} />}
+                        />
                     </dl>
                 </div>
 
@@ -204,7 +207,10 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                     <dl className="space-y-6 border-t border-border-soft pt-6">
                         <Row label={t.vehicles.insuranceCompany} value={v.insuranceCompany} />
                         <Row label={t.vehicles.insuranceType} value={v.insuranceType} />
-                        <Row label={t.vehicles.insuranceRenewal} value={v.insuranceRenewal} mono />
+                        <Row
+                            label={t.vehicles.insuranceRenewal}
+                            value={<DueDate value={v.insuranceRenewal} />}
+                        />
                     </dl>
                 </div>
             </div>
