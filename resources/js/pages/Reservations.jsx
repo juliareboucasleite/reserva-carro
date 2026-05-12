@@ -25,6 +25,9 @@ const STATUS_LABEL_KEY = {
     [RES_STATUS.CHECKED_OUT]: 'statusCheckedOut',
 };
 
+const DAMAGE_TYPE_OPTIONS = ['scratch', 'dent', 'crack', 'clip'];
+const DAMAGE_SEVERITY_OPTIONS = ['low', 'high'];
+
 export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     const { t } = useI18n();
     const { user } = useAuth();
@@ -207,11 +210,12 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkOutId)?.vehicleId
                 )}
-                onConfirm={async ({ endKm, endNotes, endMedia }) => {
+                onConfirm={async ({ endKm, endNotes, endMedia, damages }) => {
                     await checkOutReservation(checkOutId, {
                         endKm,
                         endNotes,
                         files: (endMedia || []).map((m) => m.file).filter(Boolean),
+                        damages,
                     });
                     setCheckOutId(null);
                 }}
@@ -648,6 +652,21 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
         if (editingDamageId === id) setEditingDamageId(null);
     }
 
+    function updateDamagePhoto(id, file) {
+        const target = damages.find((d) => d.id === id);
+        if (target?.photoPreviewUrl) URL.revokeObjectURL(target.photoPreviewUrl);
+
+        if (!file) {
+            updateDamage(id, { photoFile: null, photoPreviewUrl: null });
+            return;
+        }
+
+        updateDamage(id, {
+            photoFile: file,
+            photoPreviewUrl: URL.createObjectURL(file),
+        });
+    }
+
     const submit = (e) => {
         e.preventDefault();
         onConfirm({ endKm: Number(endKm), endNotes, endMedia, damages });
@@ -678,6 +697,121 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                     />
                 </Field>
                 <MediaUpload value={endMedia} onChange={setEndMedia} />
+                <div className="rounded-md border border-border-soft bg-paper-2/30 p-4">
+                    <div className="mb-4">
+                        <p className="text-sm font-semibold text-ink">{t.damages.title}</p>
+                        <p className="mt-1 text-xs text-muted">{t.damages.hint}</p>
+                        <p className="mt-2 text-xs font-medium text-muted">
+                            {t.damages.count.replace('{n}', damages.length)}
+                        </p>
+                    </div>
+
+                    <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+                        <DamageCanvas
+                            category={vehicle.category}
+                            damages={damages}
+                            selectedId={editingDamageId}
+                            onAddPoint={addDamageAt}
+                            onSelect={(damage) => setEditingDamageId(damage.id)}
+                        />
+
+                        <div className="rounded-md border border-border-soft bg-paper p-4">
+                            {editingDamage ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-ink">
+                                            Dano #{damages.findIndex((d) => d.id === editingDamage.id) + 1}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDamage(editingDamage.id)}
+                                            className="text-xs font-medium text-danger hover:underline"
+                                        >
+                                            {t.damages.remove}
+                                        </button>
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <Field label={t.damages.type}>
+                                            <Select
+                                                value={editingDamage.damage_type}
+                                                onChange={(e) =>
+                                                    updateDamage(editingDamage.id, {
+                                                        damage_type: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                {DAMAGE_TYPE_OPTIONS.map((type) => (
+                                                    <option key={type} value={type}>
+                                                        {t.damages.types[type]}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Field>
+
+                                        <Field label={t.damages.severity}>
+                                            <Select
+                                                value={editingDamage.severity}
+                                                onChange={(e) =>
+                                                    updateDamage(editingDamage.id, {
+                                                        severity: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                {DAMAGE_SEVERITY_OPTIONS.map((severity) => (
+                                                    <option key={severity} value={severity}>
+                                                        {t.damages.severities[severity]}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Field>
+                                    </div>
+
+                                    <Field label={t.damages.description}>
+                                        <Textarea
+                                            rows={4}
+                                            value={editingDamage.description}
+                                            onChange={(e) =>
+                                                updateDamage(editingDamage.id, {
+                                                    description: e.target.value,
+                                                })
+                                            }
+                                            placeholder={t.damages.descriptionPlaceholder}
+                                        />
+                                    </Field>
+
+                                    <Field label={t.damages.photo}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) =>
+                                                updateDamagePhoto(
+                                                    editingDamage.id,
+                                                    e.target.files?.[0] || null
+                                                )
+                                            }
+                                            className="block w-full text-sm text-ink file:mr-3 file:rounded-md file:border file:border-border file:bg-paper file:px-3 file:py-2 file:text-sm file:font-medium"
+                                        />
+                                    </Field>
+
+                                    {editingDamage.photoPreviewUrl && (
+                                        <div className="overflow-hidden rounded-md border border-border-soft bg-paper-2">
+                                            <img
+                                                src={editingDamage.photoPreviewUrl}
+                                                alt={t.damages.photo}
+                                                className="h-40 w-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex h-full min-h-[220px] items-center justify-center rounded-md border border-dashed border-border-soft bg-paper-2/50 px-4 text-center text-sm text-muted">
+                                    {t.damages.addFirstHint}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
                 <p className="rounded-md border border-border-soft bg-paper-2/60 px-3 py-2 text-[11px] text-muted">
                     {t.reservations.operationalManagerHint}
                 </p>
