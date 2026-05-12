@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { CameraIcon, TrashIcon } from './Icons';
 
 export function PageHeader({ title, subtitle, kicker, action }) {
     return (
@@ -141,6 +142,115 @@ export function DueDate({ value }) {
             <span className="font-mono text-xs text-ink">{value}</span>
             {tone && <Badge tone={tone}>{label}</Badge>}
         </span>
+    );
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+
+export function MediaUpload({ value = [], onChange, disabled = false }) {
+    const { t } = useI18n();
+    const inputRef = useRef(null);
+
+    async function handleFiles(event) {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
+
+        const accepted = files.filter((file) => file.size <= MAX_FILE_BYTES);
+        const items = await Promise.all(
+            accepted.map(async (file) => ({
+                id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                name: file.name,
+                type: file.type,
+                dataUrl: await readFileAsDataUrl(file),
+                createdAt: Date.now(),
+            }))
+        );
+
+        onChange([...(value || []), ...items]);
+        if (inputRef.current) inputRef.current.value = '';
+    }
+
+    function removeItem(id) {
+        onChange((value || []).filter((item) => item.id !== id));
+    }
+
+    return (
+        <div>
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-ink">{t.media.title}</p>
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={disabled}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-paper px-2.5 py-1.5 text-xs font-medium text-ink transition hover:border-ink/40 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <CameraIcon className="h-3.5 w-3.5" />
+                    {t.media.add}
+                </button>
+                <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFiles}
+                    disabled={disabled}
+                />
+            </div>
+
+            <p className="mt-1 text-[11px] text-muted">{t.media.hint}</p>
+
+            {value && value.length > 0 ? (
+                <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {value.map((item) => (
+                        <li
+                            key={item.id}
+                            className="group relative overflow-hidden rounded-md border border-border-soft bg-paper-2"
+                        >
+                            <div className="aspect-square">
+                                {item.type?.startsWith('video') ? (
+                                    <video
+                                        src={item.dataUrl}
+                                        className="h-full w-full object-cover"
+                                        muted
+                                        playsInline
+                                    />
+                                ) : (
+                                    <img
+                                        src={item.dataUrl}
+                                        alt={item.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                )}
+                            </div>
+                            {!disabled && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem(item.id)}
+                                    title={t.media.remove}
+                                    className="absolute right-1 top-1 rounded-md bg-ink/80 p-1 text-paper opacity-0 transition group-hover:opacity-100"
+                                >
+                                    <TrashIcon className="h-3 w-3" />
+                                </button>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="mt-3 rounded-md border border-dashed border-border bg-paper-2/50 px-3 py-4 text-center text-[11px] text-muted">
+                    {t.media.empty}
+                </p>
+            )}
+        </div>
     );
 }
 

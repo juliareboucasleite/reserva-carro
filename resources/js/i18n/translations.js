@@ -458,6 +458,19 @@ export const translations = {
             totalCost: 'Total cost',
             empty: 'No records.',
             createTitle: 'Register maintenance',
+            autoFromCheckout: 'Opened automatically from checkout',
+        },
+        notifications: {
+            title: 'Notifications',
+            empty: 'No notifications.',
+            markAllRead: 'Mark all as read',
+        },
+        media: {
+            title: 'Photos & video',
+            add: 'Add photo/video',
+            hint: 'Images and video up to 20 MB. Automatically deleted 30 days after checkout.',
+            remove: 'Remove',
+            empty: 'No files.',
         },
         admin: {
             title: 'Administration',

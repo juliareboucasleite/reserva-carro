@@ -317,22 +317,17 @@ export function DataProvider({ children }) {
     };
 
     const updateReservation = (id, patch) => {
-        let beforeStatus = null;
-        let after = null;
-        setReservations((prev) =>
-            prev.map((r) => {
-                if (r.id !== id) return r;
-                beforeStatus = r.status;
-                after = { ...r, ...patch };
-                return after;
-            })
-        );
+        const current = reservations.find((r) => r.id === id);
+        const beforeStatus = current?.status;
+
+        setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
         if (
-            after &&
+            current &&
             beforeStatus !== RES_STATUS.CHECKED_OUT &&
             patch.status === RES_STATUS.CHECKED_OUT
         ) {
+            const after = { ...current, ...patch };
             const vehicle = vehicles.find((v) => v.id === after.vehicleId);
             pushEvent({
                 type: NOTIFICATION_TYPES.RESERVATION_CHECKED_OUT,

@@ -11,8 +11,9 @@ import {
     Textarea,
     Select,
     Modal,
+    MediaUpload,
 } from '../components/ui';
-import { PlusIcon, CheckIcon, XIcon } from '../components/Icons';
+import { PlusIcon, CheckIcon, XIcon, WrenchIcon } from '../components/Icons';
 
 const STATUS_LABEL_KEY = {
     [RES_STATUS.PENDING]: 'statusPending',
@@ -40,6 +41,7 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     const [checkInId, setCheckInId] = useState(null);
     const [checkOutId, setCheckOutId] = useState(null);
     const [preselectVehicle, setPreselectVehicle] = useState(initialNewVehicleId || null);
+    const [maintenancePrefill, setMaintenancePrefill] = useState(null);
 
     const isManager = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
     const subtitle = isManager ? t.reservations.subtitleManager : t.reservations.subtitleDriver;
@@ -199,9 +201,12 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkInId)?.vehicleId
                 )}
-                onConfirm={(payload) => {
+                onConfirm={({ driver, startKm, startNotes, startMedia }) => {
                     updateReservation(checkInId, {
-                        ...payload,
+                        driver,
+                        startKm,
+                        startNotes,
+                        startMedia: startMedia || [],
                         status: RES_STATUS.CHECKED_IN,
                     });
                     setCheckInId(null);
@@ -216,26 +221,32 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkOutId)?.vehicleId
                 )}
-                onConfirm={({ endKm, endNotes, operational }) => {
+                onConfirm={({ endKm, endNotes, operational, endMedia }) => {
                     const r = reservations.find((x) => x.id === checkOutId);
                     updateReservation(checkOutId, {
                         endKm,
                         endNotes,
+                        endMedia: endMedia || [],
                         status: RES_STATUS.CHECKED_OUT,
                     });
                     if (r) updateVehicleKm(r.vehicleId, endKm);
                     if (!operational && r) {
                         setVehicleOperational(r.vehicleId, false);
-                        addMaintenance({
+                        setMaintenancePrefill({
                             vehicleId: r.vehicleId,
-                            date: new Date().toISOString().slice(0, 10),
-                            type: '— a definir —',
-                            downtimeDays: 0,
                             notes: endNotes || '',
-                            cost: 0,
                         });
                     }
                     setCheckOutId(null);
+                }}
+            />
+
+            <CheckoutMaintenanceModal
+                prefill={maintenancePrefill}
+                onClose={() => setMaintenancePrefill(null)}
+                onCreate={(payload) => {
+                    addMaintenance(payload);
+                    setMaintenancePrefill(null);
                 }}
             />
         </div>
@@ -363,12 +374,14 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
     const [driver, setDriver] = useState('');
     const [startKm, setStartKm] = useState('');
     const [startNotes, setStartNotes] = useState('');
+    const [startMedia, setStartMedia] = useState([]);
 
     React.useEffect(() => {
         if (open) {
             setDriver(defaultDriver || '');
             setStartKm(vehicle?.currentKm || '');
             setStartNotes('');
+            setStartMedia([]);
         }
     }, [open, defaultDriver, vehicle]);
 
@@ -376,7 +389,7 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
 
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ driver, startKm: Number(startKm), startNotes });
+        onConfirm({ driver, startKm: Number(startKm), startNotes, startMedia });
     };
 
     return (
@@ -406,6 +419,7 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
                         placeholder={t.reservations.startNotesPlaceholder}
                     />
                 </Field>
+                <MediaUpload value={startMedia} onChange={setStartMedia} />
                 <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}
@@ -419,17 +433,111 @@ function CheckInModal({ open, onClose, onConfirm, reservation, vehicle, defaultD
     );
 }
 
+function CheckoutMaintenanceModal({ prefill, onClose, onCreate }) {
+    const { t } = useI18n();
+    const { vehicles } = useData();
+    const [type, setType] = useState('');
+    const [downtimeDays, setDowntimeDays] = useState(0);
+    const [notes, setNotes] = useState('');
+    const [cost, setCost] = useState('');
+
+    React.useEffect(() => {
+        if (prefill) {
+            setType('');
+            setDowntimeDays(0);
+            setNotes(prefill.notes || '');
+            setCost('');
+        }
+    }, [prefill]);
+
+    if (!prefill) return null;
+
+    const vehicle = vehicles.find((v) => v.id === prefill.vehicleId);
+
+    const submit = (e) => {
+        e.preventDefault();
+        onCreate({
+            vehicleId: prefill.vehicleId,
+            date: new Date().toISOString().slice(0, 10),
+            type,
+            downtimeDays: Number(downtimeDays),
+            notes,
+            cost: Number(cost || 0),
+        });
+    };
+
+    return (
+        <Modal
+            open={true}
+            onClose={onClose}
+            kicker={
+                <span className="inline-flex items-center gap-2">
+                    <WrenchIcon className="h-3.5 w-3.5" />
+                    {vehicle ? `${vehicle.name} · ${vehicle.plate}` : ''}
+                </span>
+            }
+            title={t.maintenance.createTitle}
+        >
+            <p className="mb-4 rounded-md border border-warn/30 bg-warn-soft px-3 py-2 text-xs text-warn">
+                {t.maintenance.autoFromCheckout}
+            </p>
+            <form onSubmit={submit} className="space-y-5">
+                <Field label={t.maintenance.type}>
+                    <Input
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                        placeholder={t.maintenance.typePlaceholder}
+                        required
+                    />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label={t.maintenance.downtimeDays}>
+                        <Input
+                            type="number"
+                            min="0"
+                            value={downtimeDays}
+                            onChange={(e) => setDowntimeDays(e.target.value)}
+                        />
+                    </Field>
+                    <Field label={t.maintenance.cost}>
+                        <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={cost}
+                            onChange={(e) => setCost(e.target.value)}
+                        />
+                    </Field>
+                </div>
+                <Field label={t.maintenance.notes}>
+                    <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </Field>
+                <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
+                    <Button type="button" variant="secondary" onClick={onClose}>
+                        {t.common.cancel}
+                    </Button>
+                    <Button type="submit" variant="accent">
+                        {t.common.create}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+    );
+}
+
 function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     const { t } = useI18n();
     const [endKm, setEndKm] = useState('');
     const [endNotes, setEndNotes] = useState('');
     const [operational, setOperational] = useState(true);
+    const [endMedia, setEndMedia] = useState([]);
 
     React.useEffect(() => {
         if (open) {
             setEndKm(reservation?.startKm || '');
             setEndNotes('');
             setOperational(true);
+            setEndMedia([]);
         }
     }, [open, reservation]);
 
@@ -437,7 +545,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
 
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ endKm: Number(endKm), endNotes, operational });
+        onConfirm({ endKm: Number(endKm), endNotes, operational, endMedia });
     };
 
     return (
@@ -464,6 +572,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                         placeholder={t.reservations.endNotesPlaceholder}
                     />
                 </Field>
+                <MediaUpload value={endMedia} onChange={setEndMedia} />
                 <div>
                     <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                         {t.reservations.operationalQuestion}
