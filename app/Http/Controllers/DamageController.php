@@ -61,7 +61,7 @@ class DamageController extends Controller
             'photo_path' => $photoPath,
         ]);
 
-        return response()->json($damage->fresh(), 201);
+        return response()->json($this->fresh($damage), 201);
     }
 
     public function setCost(Request $request, ReservationDamage $damage): JsonResponse
@@ -83,6 +83,15 @@ class DamageController extends Controller
             'cost_set_at' => now(),
         ]);
 
-        return response()->json($damage->fresh(['costSetter:id,name']));
+        return response()->json($this->fresh($damage));
+    }
+
+    private function fresh(ReservationDamage $damage): ReservationDamage
+    {
+        return $damage->fresh([
+            'reservation.vehicle:id,brand,model,plate,category',
+            'reservation.requester:id,name',
+            'costSetter:id,name',
+        ]);
     }
 }
