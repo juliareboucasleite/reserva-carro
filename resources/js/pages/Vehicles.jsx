@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { PageHeader, Button, Badge, DueDate, MediaGallery } from '../components/ui';
+import {
+    PageHeader,
+    Button,
+    Badge,
+    DueDate,
+    MediaGallery,
+    Field,
+    Input,
+    Modal,
+    Select,
+} from '../components/ui';
 import VehicleMedia from '../components/VehicleMedia';
+import { PlusIcon } from '../components/Icons';
 
 export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
     const { t } = useI18n();
-    const { vehicles } = useData();
+    const { user } = useAuth();
+    const { vehicles, addVehicle, updateVehicle } = useData();
+    const [editing, setEditing] = useState(null);
+
+    const canManage = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
 
     return (
         <div>
@@ -15,6 +30,14 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                 kicker={t.nav.vehicles}
                 title={t.vehicles.title}
                 subtitle={t.vehicles.subtitle}
+                action={
+                    canManage && (
+                        <Button variant="accent" onClick={() => setEditing({})}>
+                            <PlusIcon className="h-4 w-4" />
+                            {t.vehicles.newVehicle}
+                        </Button>
+                    )
+                }
             />
 
             <div className="overflow-hidden rounded-md border border-border-soft">

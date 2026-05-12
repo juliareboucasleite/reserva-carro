@@ -419,6 +419,36 @@ export function DataProvider({ children }) {
         );
     };
 
+    const addVehicle = (payload) => {
+        setVehicles((prev) => {
+            const id = prev.length ? Math.max(...prev.map((v) => v.id)) + 1 : 1;
+            const created = {
+                ...payload,
+                id,
+                name: `${payload.brand} ${payload.model}`,
+                operational: payload.operational ?? true,
+                currentKm: Number(payload.currentKm) || 0,
+                seats: Number(payload.seats) || 0,
+            };
+            return [...prev, created];
+        });
+    };
+
+    const updateVehicle = (vehicleId, patch) => {
+        setVehicles((prev) =>
+            prev.map((v) => {
+                if (v.id !== vehicleId) return v;
+                const merged = { ...v, ...patch };
+                if (patch.brand || patch.model) {
+                    merged.name = `${merged.brand} ${merged.model}`;
+                }
+                if (patch.currentKm !== undefined) merged.currentKm = Number(patch.currentKm) || 0;
+                if (patch.seats !== undefined) merged.seats = Number(patch.seats) || 0;
+                return merged;
+            })
+        );
+    };
+
     const getVehicle = (id) => vehicles.find((v) => v.id === id);
     const getMaintenanceFor = (vehicleId) =>
         maintenance.filter((m) => m.vehicleId === vehicleId);
@@ -497,6 +527,8 @@ export function DataProvider({ children }) {
                 addMaintenance,
                 setVehicleOperational,
                 updateVehicleKm,
+                addVehicle,
+                updateVehicle,
                 getVehicle,
                 getMaintenanceFor,
                 notifications,
