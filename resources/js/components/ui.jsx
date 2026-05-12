@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { CameraIcon, TrashIcon } from './Icons';
-import { resolveExteriorSvg } from '../utils/vehicleExterior';
+import { resolveVehicleSvg } from '../utils/vehicleExterior';
 
 export function PageHeader({ title, subtitle, kicker, action }) {
     return (
@@ -530,6 +530,8 @@ function AngleSlot({
 
 export function DamageCanvas({
     category = 'car',
+    view = 'exterior',
+    vehicleName = '',
     damages = [],
     selectedId = null,
     onAddPoint,
@@ -558,8 +560,8 @@ export function DamageCanvas({
             }`}
         >
             <img
-                src={resolveExteriorSvg(category)}
-                alt="Exterior"
+                src={resolveVehicleSvg(category, view, vehicleName)}
+                alt={view === 'interior' ? 'Interior' : 'Exterior'}
                 className="block h-auto w-full select-none"
                 draggable={false}
             />
@@ -690,7 +692,7 @@ export function Modal({ open, onClose, title, kicker, children, maxWidth = 'max-
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className={`w-full ${maxWidth} overflow-hidden rounded-md border border-border bg-paper shadow-xl`}
+                className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-md border border-border bg-paper shadow-xl ${maxWidth}`}
             >
                 <div className="flex items-start justify-between border-b border-border-soft px-6 py-4">
                     <div>
@@ -710,7 +712,7 @@ export function Modal({ open, onClose, title, kicker, children, maxWidth = 'max-
                         </svg>
                     </button>
                 </div>
-                <div className="px-6 py-5">{children}</div>
+                <div className="overflow-y-auto px-6 py-5">{children}</div>
             </div>
         </div>
     );

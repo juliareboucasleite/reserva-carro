@@ -606,6 +606,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     const [endNotes, setEndNotes] = useState('');
     const [endAngleMedia, setEndAngleMedia] = useState({});
     const [hasDamages, setHasDamages] = useState(false);
+    const [damageView, setDamageView] = useState('exterior');
     const [damages, setDamages] = useState([]);
     const [editingDamageId, setEditingDamageId] = useState(null);
 
@@ -615,6 +616,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
             setEndNotes('');
             setEndAngleMedia({});
             setHasDamages(false);
+            setDamageView('exterior');
             setDamages([]);
             setEditingDamageId(null);
         }
@@ -634,6 +636,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                 id,
                 x,
                 y,
+                view: damageView,
                 damage_type: 'scratch',
                 severity: 'low',
                 description: '',
@@ -738,24 +741,52 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                 </div>
                 {hasDamages && (
                 <div className="rounded-md border border-border-soft bg-paper-2/30 p-4">
-                    <div className="mb-4">
-                        <p className="text-sm font-semibold text-ink">{t.damages.title}</p>
+                        <div className="mb-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-ink">{t.damages.title}</p>
+                            <div className="inline-flex rounded-md border border-border-soft bg-paper p-1">
+                                {['exterior', 'interior'].map((view) => (
+                                    <button
+                                        key={view}
+                                        type="button"
+                                        onClick={() => setDamageView(view)}
+                                        className={`rounded-sm px-3 py-1 text-xs font-medium transition ${
+                                            damageView === view
+                                                ? 'bg-ink text-paper'
+                                                : 'text-muted hover:text-ink'
+                                        }`}
+                                    >
+                                        {view === 'exterior' ? 'Exterior' : 'Interior'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <p className="mt-2 text-xs font-medium text-muted">
-                            {t.damages.count.replace('{n}', damages.length)}
+                            {t.damages.count.replace(
+                                '{n}',
+                                damages.filter((damage) => (damage.view || 'exterior') === damageView)
+                                    .length
+                            )}
                         </p>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
                         <DamageCanvas
                             category={vehicle.category}
-                            damages={damages}
+                            view={damageView}
+                            vehicleName={vehicle.name}
+                            damages={damages.filter(
+                                (damage) => (damage.view || 'exterior') === damageView
+                            )}
                             selectedId={editingDamageId}
                             onAddPoint={addDamageAt}
                             onSelect={(damage) => setEditingDamageId(damage.id)}
                         />
 
                         <div className="overflow-hidden rounded-md border border-border-soft bg-paper">
-                            {damages.length === 0 ? (
+                            {damages.filter(
+                                (damage) => (damage.view || 'exterior') === damageView
+                            ).length === 0 ? (
                                 <div className="flex min-h-[140px] items-center justify-center px-6 text-center text-sm text-muted">
                                     {t.damages.emptyPanel}
                                 </div>
@@ -778,11 +809,21 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {damages.map((damage, index) => (
+                                        {damages
+                                            .filter(
+                                                (damage) =>
+                                                    (damage.view || 'exterior') === damageView
+                                            )
+                                            .map((damage, index) => (
                                             <tr
                                                 key={damage.id}
                                                 className={`${
-                                                    index !== damages.length - 1
+                                                    index !==
+                                                    damages.filter(
+                                                        (entry) =>
+                                                            (entry.view || 'exterior') === damageView
+                                                    ).length -
+                                                        1
                                                         ? 'border-b border-border-soft'
                                                         : ''
                                                 }`}
@@ -804,9 +845,9 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                                                     >
                                                         {t.common.edit}
                                                     </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             )}

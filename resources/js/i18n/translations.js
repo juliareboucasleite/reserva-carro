@@ -130,7 +130,7 @@ export const translations = {
             noAlerts: 'Sem alertas próximos.',
         },
         vehicles: {
-            title: 'Viaturas',
+            title: 'Carros disponíveis',
             subtitle: 'Frota disponível e respetivos dados.',
             newVehicle: 'Nova viatura',
             plate: 'Matrícula',
@@ -201,11 +201,11 @@ export const translations = {
             doCheckIn: 'Confirmar Check-in',
             checkOutTitle: 'Checkout da reserva',
             endKm: 'Km finais',
-            endNotes: 'Observações finais',
+            endNotes: 'Observações finais (Opcional)',
             endNotesPlaceholder: 'Estado da viatura, ocorrências…',
             doCheckOut: 'Confirmar Checkout',
             endAngleMediaHint:
-                'Adicione 1 foto ou vÃ­deo por lado da viatura: frente, trÃ¡s, direita e esquerda.',
+                'Adicione 1 foto ou video por lado da viatura: frente, tras, direita e esquerda.',
             operationalQuestion: 'A viatura ficou operacional?',
             operationalYes: 'Sim, operacional',
             operationalNo: 'Não, abrir ficha de manutenção',
@@ -219,7 +219,7 @@ export const translations = {
             confirmOperationalSubtitle:
                 'Se selecionar "Não", a viatura é marcada como inoperacional e abre-se uma ficha de manutenção.',
             startMediaLabel: 'Fotos / vídeo de check-in',
-            endMediaLabel: 'Fotos / vídeo de checkout',
+            endMediaLabel: 'Fotos / vídeo de checkout *',
         },
         maintenance: {
             title: 'Manutenção',
@@ -263,7 +263,7 @@ export const translations = {
             pageSubtitleDriver: 'Acompanhe os danos que reportou nas devoluções.',
             pageSubtitleManager: 'Avalie os danos reportados e defina custos para o condutor.',
             title: 'Danos no exterior',
-            toggleLabel: 'HÃ¡ danos para reportar',
+            toggleLabel: 'Há danos para reportar?',
             emptyPanel: 'Toque na viatura para adicionar um dano.',
             hint: 'Clique no carro onde bateu para marcar um dano. Pode marcar vários.',
             addFirstHint: 'Sem danos a reportar.',
@@ -415,7 +415,7 @@ export const translations = {
             roleDriverDesc: 'Request vehicles, perform Check-in and Checkout.',
             roleManagerDesc: 'Approve reservations and manage fleet and maintenance.',
             roleAdminDesc: 'Manage users, teams and settings.',
-            demoNotice: 'Demo — click a role to sign in.',
+            demoNotice: 'Demo, click a role to sign in.',
         },
         nav: {
             dashboard: 'Dashboard',

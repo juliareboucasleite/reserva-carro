@@ -100,6 +100,7 @@ function DamageCard({ damage, isManager, saving, onSave }) {
                 <div className="space-y-4">
                     <DamageCanvas
                         category={vehicle?.category || 'car'}
+                        vehicleName={vehicle?.name || ''}
                         damages={[
                             {
                                 id: damage.id,
