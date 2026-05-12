@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'location_search' => [
+        'provider' => env('LOCATION_PROVIDER', 'local'),
+    ],
+
 ];
