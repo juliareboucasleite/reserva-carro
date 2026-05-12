@@ -381,7 +381,7 @@ export function MediaGallery({ items = [] }) {
                         href={item.dataUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="block aspect-square"
+                        className="relative block aspect-square"
                     >
                         {item.type?.startsWith('video') ? (
                             <video
@@ -396,6 +396,11 @@ export function MediaGallery({ items = [] }) {
                                 alt={item.name}
                                 className="h-full w-full object-cover"
                             />
+                        )}
+                        {item.angle && t.media.angles?.[item.angle] && (
+                            <span className="absolute left-1 top-1 rounded-sm bg-ink/80 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-paper">
+                                {t.media.angles[item.angle]}
+                            </span>
                         )}
                     </a>
                 </li>

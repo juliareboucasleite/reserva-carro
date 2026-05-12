@@ -58,6 +58,7 @@ function mapReservationMedia(m) {
     return {
         id: m.id,
         dataUrl: m.url,
+        angle: m.angle || null,
         name: m.original_name,
         type: m.mime,
         size: m.size,
