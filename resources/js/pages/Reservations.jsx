@@ -11,7 +11,6 @@ import {
     Textarea,
     Select,
     Modal,
-    MediaUpload,
     AngleUpload,
     DamageCanvas,
 } from '../components/ui';
@@ -605,7 +604,8 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     const { t } = useI18n();
     const [endKm, setEndKm] = useState('');
     const [endNotes, setEndNotes] = useState('');
-    const [endMedia, setEndMedia] = useState([]);
+    const [endAngleMedia, setEndAngleMedia] = useState({});
+    const [hasDamages, setHasDamages] = useState(false);
     const [damages, setDamages] = useState([]);
     const [editingDamageId, setEditingDamageId] = useState(null);
 
@@ -613,7 +613,8 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
         if (open) {
             setEndKm(reservation?.startKm || '');
             setEndNotes('');
-            setEndMedia([]);
+            setEndAngleMedia({});
+            setHasDamages(false);
             setDamages([]);
             setEditingDamageId(null);
         }
@@ -622,6 +623,8 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     if (!reservation || !vehicle) return null;
 
     const editingDamage = damages.find((d) => d.id === editingDamageId);
+    const requiredAngles = ['front', 'back', 'left', 'right'];
+    const hasAllAngles = requiredAngles.every((angle) => endAngleMedia[angle]?.file);
 
     function addDamageAt({ x, y }) {
         const id = `tmp-${Date.now()}`;
@@ -669,7 +672,13 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
 
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ endKm: Number(endKm), endNotes, endMedia, damages });
+        if (!hasAllAngles) return;
+        onConfirm({
+            endKm: Number(endKm),
+            endNotes,
+            angleMedia: endAngleMedia,
+            damages: hasDamages ? damages : [],
+        });
     };
 
     return (
