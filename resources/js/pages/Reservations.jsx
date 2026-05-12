@@ -706,7 +706,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                         </p>
                     </div>
 
-                    <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+                    <div className="grid gap-5 xl:grid-cols-[520px_1fr]">
                         <DamageCanvas
                             category={vehicle.category}
                             damages={damages}
@@ -715,99 +715,61 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                             onSelect={(damage) => setEditingDamageId(damage.id)}
                         />
 
-                        <div className="rounded-md border border-border-soft bg-paper p-4">
-                            {editingDamage ? (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-semibold text-ink">
-                                            Dano #{damages.findIndex((d) => d.id === editingDamage.id) + 1}
-                                        </p>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeDamage(editingDamage.id)}
-                                            className="text-xs font-medium text-danger hover:underline"
-                                        >
-                                            {t.damages.remove}
-                                        </button>
-                                    </div>
-
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t.damages.type}>
-                                            <Select
-                                                value={editingDamage.damage_type}
-                                                onChange={(e) =>
-                                                    updateDamage(editingDamage.id, {
-                                                        damage_type: e.target.value,
-                                                    })
-                                                }
-                                            >
-                                                {DAMAGE_TYPE_OPTIONS.map((type) => (
-                                                    <option key={type} value={type}>
-                                                        {t.damages.types[type]}
-                                                    </option>
-                                                ))}
-                                            </Select>
-                                        </Field>
-
-                                        <Field label={t.damages.severity}>
-                                            <Select
-                                                value={editingDamage.severity}
-                                                onChange={(e) =>
-                                                    updateDamage(editingDamage.id, {
-                                                        severity: e.target.value,
-                                                    })
-                                                }
-                                            >
-                                                {DAMAGE_SEVERITY_OPTIONS.map((severity) => (
-                                                    <option key={severity} value={severity}>
-                                                        {t.damages.severities[severity]}
-                                                    </option>
-                                                ))}
-                                            </Select>
-                                        </Field>
-                                    </div>
-
-                                    <Field label={t.damages.description}>
-                                        <Textarea
-                                            rows={4}
-                                            value={editingDamage.description}
-                                            onChange={(e) =>
-                                                updateDamage(editingDamage.id, {
-                                                    description: e.target.value,
-                                                })
-                                            }
-                                            placeholder={t.damages.descriptionPlaceholder}
-                                        />
-                                    </Field>
-
-                                    <Field label={t.damages.photo}>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) =>
-                                                updateDamagePhoto(
-                                                    editingDamage.id,
-                                                    e.target.files?.[0] || null
-                                                )
-                                            }
-                                            className="block w-full text-sm text-ink file:mr-3 file:rounded-md file:border file:border-border file:bg-paper file:px-3 file:py-2 file:text-sm file:font-medium"
-                                        />
-                                    </Field>
-
-                                    {editingDamage.photoPreviewUrl && (
-                                        <div className="overflow-hidden rounded-md border border-border-soft bg-paper-2">
-                                            <img
-                                                src={editingDamage.photoPreviewUrl}
-                                                alt={t.damages.photo}
-                                                className="h-40 w-full object-cover"
-                                            />
-                                        </div>
-                                    )}
+                        <div className="overflow-hidden rounded-md border border-border-soft bg-paper">
+                            {damages.length === 0 ? (
+                                <div className="flex min-h-[180px] items-center justify-center px-6 text-center text-sm text-muted">
+                                    Tap on the vehicle&apos;s part to add damage
                                 </div>
                             ) : (
-                                <div className="flex h-full min-h-[220px] items-center justify-center rounded-md border border-dashed border-border-soft bg-paper-2/50 px-4 text-center text-sm text-muted">
-                                    {t.damages.addFirstHint}
-                                </div>
+                                <table className="min-w-full text-sm">
+                                    <thead className="border-b border-border-soft bg-paper-2/70 text-left">
+                                        <tr>
+                                            <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                                                No
+                                            </th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                                                {t.damages.type}
+                                            </th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                                                {t.damages.description}
+                                            </th>
+                                            <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted">
+                                                {t.common.actions}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {damages.map((damage, index) => (
+                                            <tr
+                                                key={damage.id}
+                                                className={`${
+                                                    index !== damages.length - 1
+                                                        ? 'border-b border-border-soft'
+                                                        : ''
+                                                }`}
+                                            >
+                                                <td className="px-4 py-3 font-medium text-ink">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="px-4 py-3 text-ink">
+                                                    {t.damages.types[damage.damage_type]}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted">
+                                                    {damage.description || '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingDamageId(damage.id)}
+                                                        className="text-sm font-medium text-sky-600 hover:underline"
+                                                    >
+                                                        {t.common.edit}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             )}
                         </div>
                     </div>
@@ -824,6 +786,118 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                     </Button>
                 </div>
             </form>
+
+            <DamageDetailModal
+                open={Boolean(editingDamage)}
+                damage={editingDamage}
+                damageIndex={damages.findIndex((d) => d.id === editingDamageId) + 1}
+                onClose={() => setEditingDamageId(null)}
+                onUpdate={updateDamage}
+                onUpdatePhoto={updateDamagePhoto}
+                onRemove={removeDamage}
+            />
+        </Modal>
+    );
+}
+
+function DamageDetailModal({
+    open,
+    damage,
+    damageIndex,
+    onClose,
+    onUpdate,
+    onUpdatePhoto,
+    onRemove,
+}) {
+    const { t } = useI18n();
+
+    if (!open || !damage) return null;
+
+    return (
+        <Modal open={open} onClose={onClose} title={`Add damage #${damageIndex}`} maxWidth="max-w-2xl">
+            <div className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-[1.5fr_0.8fr]">
+                    <Field label={t.damages.type}>
+                        <Select
+                            value={damage.damage_type}
+                            onChange={(e) =>
+                                onUpdate(damage.id, {
+                                    damage_type: e.target.value,
+                                })
+                            }
+                        >
+                            {DAMAGE_TYPE_OPTIONS.map((type) => (
+                                <option key={type} value={type}>
+                                    {t.damages.types[type]}
+                                </option>
+                            ))}
+                        </Select>
+                    </Field>
+
+                    <Field label={t.damages.severity}>
+                        <Select
+                            value={damage.severity}
+                            onChange={(e) =>
+                                onUpdate(damage.id, {
+                                    severity: e.target.value,
+                                })
+                            }
+                        >
+                            {DAMAGE_SEVERITY_OPTIONS.map((severity) => (
+                                <option key={severity} value={severity}>
+                                    {t.damages.severities[severity]}
+                                </option>
+                            ))}
+                        </Select>
+                    </Field>
+                </div>
+
+                <Field label={t.damages.description}>
+                    <Textarea
+                        rows={5}
+                        value={damage.description}
+                        onChange={(e) =>
+                            onUpdate(damage.id, {
+                                description: e.target.value,
+                            })
+                        }
+                        placeholder={t.damages.descriptionPlaceholder}
+                    />
+                </Field>
+
+                <Field label={t.damages.photo}>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => onUpdatePhoto(damage.id, e.target.files?.[0] || null)}
+                        className="block w-full text-sm text-ink file:mr-3 file:rounded-md file:border file:border-border file:bg-paper file:px-3 file:py-2 file:text-sm file:font-medium"
+                    />
+                </Field>
+
+                {damage.photoPreviewUrl && (
+                    <div className="overflow-hidden rounded-md border border-border-soft bg-paper-2">
+                        <img
+                            src={damage.photoPreviewUrl}
+                            alt={t.damages.photo}
+                            className="h-44 w-full object-cover"
+                        />
+                    </div>
+                )}
+
+                <div className="flex justify-between gap-3 border-t border-border-soft pt-4">
+                    <Button type="button" variant="danger" onClick={() => onRemove(damage.id)}>
+                        {t.damages.remove}
+                    </Button>
+                    <div className="flex gap-2">
+                        <Button type="button" variant="secondary" onClick={onClose}>
+                            {t.common.cancel}
+                        </Button>
+                        <Button type="button" variant="accent" onClick={onClose}>
+                            {t.common.save}
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </Modal>
     );
 }

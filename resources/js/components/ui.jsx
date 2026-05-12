@@ -548,12 +548,13 @@ export function DamageCanvas({
                     }}
                     title={d.description || d.damage_type}
                     style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition ${
+                    className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-[10px] font-bold text-white transition ${
                         selectedId === d.id
-                            ? 'h-6 w-6 border-white bg-danger shadow-[0_0_0_3px_rgba(185,28,28,0.4)]'
-                            : 'h-4 w-4 border-white bg-danger hover:scale-110'
+                            ? 'h-7 w-7 border-white bg-sky-600 shadow-[0_0_0_3px_rgba(37,99,235,0.28)]'
+                            : 'h-5 w-5 border-white bg-sky-500 hover:scale-110'
                     } ${d.cost !== null && d.cost !== undefined ? 'opacity-70' : ''}`}
                 >
+                    <span>{index + 1}</span>
                     <span className="sr-only">Dano {index + 1}</span>
                 </button>
             ))}
