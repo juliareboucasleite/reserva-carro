@@ -27,7 +27,10 @@ const STATUS_LABEL_KEY = {
 const DAMAGE_TYPE_OPTIONS = ['scratch', 'dent', 'crack', 'clip'];
 const DAMAGE_SEVERITY_OPTIONS = ['low', 'high'];
 
-export default function Reservations({ initialNewVehicleId, onClearInitial }) {
+export default function Reservations({ initialDraft, onClearInitial }) {
+    const initialVehicleId = initialDraft?.vehicleId || null;
+    const initialDate = initialDraft?.date || '';
+    const initialTrip = initialDraft?.trip || '';
     const { t } = useI18n();
     const { user } = useAuth();
     const {
@@ -43,12 +46,23 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     } = useData();
 
     const [filter, setFilter] = useState('all');
-    const [newOpen, setNewOpen] = useState(!!initialNewVehicleId);
+    const [newOpen, setNewOpen] = useState(!!initialVehicleId);
     const [checkInId, setCheckInId] = useState(null);
     const [checkOutId, setCheckOutId] = useState(null);
     const [confirmOpId, setConfirmOpId] = useState(null);
-    const [preselectVehicle, setPreselectVehicle] = useState(initialNewVehicleId || null);
+    const [preselectVehicle, setPreselectVehicle] = useState(initialVehicleId);
+    const [preselectDate, setPreselectDate] = useState(initialDate);
+    const [preselectTrip, setPreselectTrip] = useState(initialTrip);
     const [maintenancePrefill, setMaintenancePrefill] = useState(null);
+
+    React.useEffect(() => {
+        if (initialVehicleId) {
+            setPreselectVehicle(initialVehicleId);
+            setPreselectDate(initialDate);
+            setPreselectTrip(initialTrip);
+            setNewOpen(true);
+        }
+    }, [initialVehicleId, initialDate, initialTrip]);
 
     const isManager = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
     const subtitle = isManager ? t.reservations.subtitleManager : t.reservations.subtitleDriver;
@@ -77,6 +91,8 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     const handleNewClose = () => {
         setNewOpen(false);
         setPreselectVehicle(null);
+        setPreselectDate('');
+        setPreselectTrip('');
         if (onClearInitial) onClearInitial();
     };
 
@@ -202,6 +218,8 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 open={newOpen}
                 onClose={handleNewClose}
                 preselectVehicle={preselectVehicle}
+                preselectDate={preselectDate}
+                preselectTrip={preselectTrip}
                 onCreate={async (payload) => {
                     await addReservation(payload);
                     handleNewClose();
@@ -349,20 +367,20 @@ function Actions({
     return <span className="text-xs text-muted">—</span>;
 }
 
-function NewReservationModal({ open, onClose, onCreate, preselectVehicle }) {
+function NewReservationModal({ open, onClose, onCreate, preselectVehicle, preselectDate, preselectTrip }) {
     const { t } = useI18n();
     const { vehicles } = useData();
     const [vehicleId, setVehicleId] = useState(preselectVehicle || '');
-    const [trip, setTrip] = useState('');
-    const [date, setDate] = useState('');
+    const [trip, setTrip] = useState(preselectTrip || '');
+    const [date, setDate] = useState(preselectDate || '');
 
     React.useEffect(() => {
         if (open) {
             setVehicleId(preselectVehicle || '');
-            setTrip('');
-            setDate('');
+            setTrip(preselectTrip || '');
+            setDate(preselectDate || '');
         }
-    }, [open, preselectVehicle]);
+    }, [open, preselectVehicle, preselectDate, preselectTrip]);
 
     const submit = (e) => {
         e.preventDefault();

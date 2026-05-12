@@ -196,7 +196,14 @@ function getRatingBucketLabel(rating) {
     return 'Regular';
 }
 
-export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
+export default function SearchResultsPage({
+    search,
+    onBack,
+    onGoToLogin,
+    onStartReservation,
+    isAuthenticated,
+    onGoToDashboard,
+}) {
     const { vehicles } = useData();
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedCategories, setSelectedCategories] = useState([]);
@@ -364,10 +371,10 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                     </button>
                     <button
                         type="button"
-                        onClick={onGoToLogin}
+                        onClick={isAuthenticated ? onGoToDashboard : onGoToLogin}
                         className="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-paper hover:bg-ink-soft"
                     >
-                        Iniciar sessão
+                        {isAuthenticated ? 'Voltar ao painel' : 'Iniciar sessão'}
                     </button>
                 </div>
             </header>
@@ -658,7 +665,15 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                             ) : (
                                 <div className="space-y-4">
                                     {filteredOffers.map((offer) => (
-                                        <SearchOfferCard key={offer.id} offer={offer} onReserve={onGoToLogin} />
+                                        <SearchOfferCard
+                                            key={offer.id}
+                                            offer={offer}
+                                            onReserve={() =>
+                                                onStartReservation
+                                                    ? onStartReservation(offer.vehicle)
+                                                    : onGoToLogin?.()
+                                            }
+                                        />
                                     ))}
                                 </div>
                             )}

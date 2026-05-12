@@ -13,7 +13,7 @@ import {
     AlertIcon,
 } from './Icons';
 
-export default function DashboardLayout({ currentView, onNavigate, children }) {
+export default function DashboardLayout({ currentView, onNavigate, onGoToPublic, children }) {
     const { t, lang, setLang } = useI18n();
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -102,6 +102,15 @@ export default function DashboardLayout({ currentView, onNavigate, children }) {
                     <div className="flex-1" />
 
                     <div className="flex items-center gap-4">
+                        {onGoToPublic && (
+                            <button
+                                onClick={onGoToPublic}
+                                className="hidden items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-paper-2 sm:flex"
+                            >
+                                Página inicial
+                            </button>
+                        )}
+
                         <div className="flex text-xs font-medium">
                             <button
                                 onClick={() => setLang('pt')}

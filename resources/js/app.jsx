@@ -1,6 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nProvider } from './i18n/I18nContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -16,14 +16,30 @@ import Damages from './pages/Damages';
 import Maintenance from './pages/Maintenance';
 import Admin from './pages/Admin';
 
+function buildTripFromSearch(search) {
+    if (!search) return '';
+    const pickup = search.pickupLocationData?.label || search.pickupLocation || '';
+    const dropoff = search.returnLocationData?.label || search.returnLocation || '';
+    if (pickup && dropoff && pickup !== dropoff) return `${pickup} → ${dropoff}`;
+    return pickup || dropoff || '';
+}
+
 function AppShell() {
     const { isAuthenticated, authLoading } = useAuth();
     const [publicPage, setPublicPage] = useState('landing');
     const [publicModal, setPublicModal] = useState(null);
     const [publicSearch, setPublicSearch] = useState(null);
+    const [showPublic, setShowPublic] = useState(false);
     const [view, setView] = useState('dashboard');
     const [vehicleId, setVehicleId] = useState(null);
-    const [pendingReservationVehicle, setPendingReservationVehicle] = useState(null);
+    const [reservationDraft, setReservationDraft] = useState(null);
+
+    useEffect(() => {
+        if (isAuthenticated && reservationDraft) {
+            setShowPublic(false);
+            setView('reservations');
+        }
+    }, [isAuthenticated, reservationDraft]);
 
     if (authLoading) {
         return (
@@ -33,25 +49,60 @@ function AppShell() {
         );
     }
 
-    if (!isAuthenticated) {
+    const startPublicReservation = (vehicle) => {
+        if (vehicle) {
+            setReservationDraft({
+                vehicleId: vehicle.id,
+                date: publicSearch?.pickupDate || '',
+                trip: buildTripFromSearch(publicSearch),
+            });
+        }
+        if (isAuthenticated) {
+            setShowPublic(false);
+            setView('reservations');
+        } else {
+            setPublicModal('login');
+        }
+    };
+
+    const goToDashboard = () => {
+        setShowPublic(false);
+        setPublicModal(null);
+    };
+
+    const handlePublicLoginCta = () => {
+        if (isAuthenticated) {
+            goToDashboard();
+        } else {
+            setPublicModal('login');
+        }
+    };
+
+    if (!isAuthenticated || showPublic) {
         return (
             <>
                 {publicPage === 'search-results' ? (
                     <SearchResultsPage
                         search={publicSearch}
                         onBack={() => setPublicPage('landing')}
-                        onGoToLogin={() => setPublicModal('login')}
+                        onGoToLogin={handlePublicLoginCta}
+                        onStartReservation={startPublicReservation}
+                        isAuthenticated={isAuthenticated}
+                        onGoToDashboard={goToDashboard}
                     />
                 ) : (
                     <LandingPage
-                        onGoToLogin={() => setPublicModal('login')}
+                        onGoToLogin={handlePublicLoginCta}
+                        onStartReservation={startPublicReservation}
                         onSearch={(search) => {
                             setPublicSearch(search);
                             setPublicPage('search-results');
                         }}
+                        isAuthenticated={isAuthenticated}
+                        onGoToDashboard={goToDashboard}
                     />
                 )}
-                {publicModal === 'login' && (
+                {publicModal === 'login' && !isAuthenticated && (
                     <Login onBack={() => setPublicModal(null)} />
                 )}
             </>
@@ -61,7 +112,7 @@ function AppShell() {
     const navigate = (next) => {
         setView(next);
         setVehicleId(null);
-        if (next !== 'reservations') setPendingReservationVehicle(null);
+        if (next !== 'reservations') setReservationDraft(null);
     };
 
     const openVehicle = (id) => {
@@ -70,7 +121,7 @@ function AppShell() {
     };
 
     const requestReservation = (id) => {
-        setPendingReservationVehicle(id);
+        setReservationDraft({ vehicleId: id, date: '', trip: '' });
         setView('reservations');
     };
 
@@ -91,8 +142,8 @@ function AppShell() {
     else if (view === 'reservations')
         content = (
             <Reservations
-                initialNewVehicleId={pendingReservationVehicle}
-                onClearInitial={() => setPendingReservationVehicle(null)}
+                initialDraft={reservationDraft}
+                onClearInitial={() => setReservationDraft(null)}
             />
         );
     else if (view === 'damages') content = <Damages />;
@@ -103,7 +154,11 @@ function AppShell() {
     const sidebarView = view === 'vehicle-detail' ? 'vehicles' : view;
 
     return (
-        <DashboardLayout currentView={sidebarView} onNavigate={navigate}>
+        <DashboardLayout
+            currentView={sidebarView}
+            onNavigate={navigate}
+            onGoToPublic={() => setShowPublic(true)}
+        >
             {content}
         </DashboardLayout>
     );

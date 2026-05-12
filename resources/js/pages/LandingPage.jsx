@@ -262,7 +262,13 @@ function getRatingBucketLabel(rating) {
     return 'Regular';
 }
 
-export default function LandingPage({ onGoToLogin, onSearch }) {
+export default function LandingPage({
+    onGoToLogin,
+    onSearch,
+    onStartReservation,
+    isAuthenticated,
+    onGoToDashboard,
+}) {
     const { t, lang, setLang } = useI18n();
     const { vehicles } = useData();
     const widgetRef = useRef(null);
@@ -698,10 +704,10 @@ export default function LandingPage({ onGoToLogin, onSearch }) {
                         <div className="flex items-center gap-4">
                             <LangSwitch lang={lang} setLang={setLang} light />
                             <button
-                                onClick={onGoToLogin}
+                                onClick={isAuthenticated ? onGoToDashboard : onGoToLogin}
                                 className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/16"
                             >
-                                {t.landing.navLogin}
+                                {isAuthenticated ? 'Voltar ao painel' : t.landing.navLogin}
                             </button>
                         </div>
                     </div>
@@ -1261,7 +1267,11 @@ export default function LandingPage({ onGoToLogin, onSearch }) {
                                         <SearchOfferCard
                                             key={offer.id}
                                             offer={offer}
-                                            onReserve={onGoToLogin}
+                                            onReserve={() =>
+                                                onStartReservation
+                                                    ? onStartReservation(offer.vehicle)
+                                                    : onGoToLogin?.()
+                                            }
                                         />
                                     ))}
                                 </div>
@@ -1316,7 +1326,11 @@ export default function LandingPage({ onGoToLogin, onSearch }) {
                                 <VehicleCard
                                     key={vehicle.id}
                                     vehicle={vehicle}
-                                    onReserve={onGoToLogin}
+                                    onReserve={() =>
+                                        onStartReservation
+                                            ? onStartReservation(vehicle)
+                                            : onGoToLogin?.()
+                                    }
                                 />
                             ))}
                         </div>
