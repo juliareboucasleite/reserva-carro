@@ -413,6 +413,25 @@ export function MediaGallery({ items = [] }) {
     );
 }
 
+export function AvailabilityBadge({ vehicle }) {
+    const { t } = useI18n();
+    const availability = vehicle?.availability || 'available';
+
+    const label = {
+        available: t.vehicles.availabilityAvailable,
+        pre_reserved: t.vehicles.availabilityPreReserved,
+        reserved: t.vehicles.availabilityReserved,
+        in_use: t.vehicles.availabilityInUse,
+        inoperational: t.vehicles.availabilityInoperational,
+    }[availability];
+
+    return <Badge tone={availability}>{label}</Badge>;
+}
+
+export function isVehicleReservable(vehicle) {
+    return vehicle?.availability === 'available';
+}
+
 export function Badge({ tone = 'neutral', children }) {
     return (
         <span

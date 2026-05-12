@@ -12,6 +12,8 @@ import {
     Input,
     Modal,
     Select,
+    AvailabilityBadge,
+    isVehicleReservable,
 } from '../components/ui';
 import VehicleMedia from '../components/VehicleMedia';
 import { PlusIcon } from '../components/Icons';
@@ -96,11 +98,14 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                     <DueDate value={v.nextInspection} />
                                 </td>
                                 <td className="px-5 py-4">
-                                    <Badge tone={v.operational ? 'operational' : 'inoperational'}>
-                                        {v.operational
-                                            ? t.vehicles.operationalYes
-                                            : t.vehicles.operationalNo}
-                                    </Badge>
+                                    <div className="flex flex-col gap-1">
+                                        <AvailabilityBadge vehicle={v} />
+                                        {v.activeReservation && (
+                                            <span className="text-[10px] text-muted">
+                                                {v.activeReservation.requesterName} · {v.activeReservation.date}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-5 py-4 text-right">
                                     <div className="inline-flex gap-2">
@@ -120,7 +125,7 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                                 {t.common.edit}
                                             </Button>
                                         )}
-                                        {v.operational && (
+                                        {isVehicleReservable(v) && (
                                             <Button
                                                 variant="accent"
                                                 size="sm"
@@ -197,10 +202,13 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                     <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink md:text-3xl">
                         {v.name}
                     </h1>
-                    <div className="mt-3">
-                        <Badge tone={v.operational ? 'operational' : 'inoperational'}>
-                            {v.operational ? t.vehicles.operationalYes : t.vehicles.operationalNo}
-                        </Badge>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <AvailabilityBadge vehicle={v} />
+                        {v.activeReservation && (
+                            <span className="text-xs text-muted">
+                                {v.activeReservation.requesterName} · {v.activeReservation.date}
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -224,7 +232,7 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                             </Button>
                         </>
                     )}
-                    {v.operational && (
+                    {isVehicleReservable(v) && (
                         <Button variant="accent" size="sm" onClick={() => onRequestReservation(v.id)}>
                             {t.vehicles.requestThis}
                         </Button>
