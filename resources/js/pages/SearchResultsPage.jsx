@@ -14,6 +14,7 @@ const OFFER_PRESETS = {
         price: 48.5,
         cashback: 6.4,
         rating: '8.7',
+        ratingCount: 1248,
         luggage: 7,
     },
     'vw transporter': {
@@ -27,6 +28,7 @@ const OFFER_PRESETS = {
         price: 44.2,
         cashback: 5.8,
         rating: '8.3',
+        ratingCount: 982,
         luggage: 6,
     },
     'mitsubishi l400': {
@@ -40,6 +42,7 @@ const OFFER_PRESETS = {
         price: 32.9,
         cashback: 4.1,
         rating: '7.9',
+        ratingCount: 614,
         luggage: 5,
     },
     'opel vivaro': {
@@ -53,6 +56,7 @@ const OFFER_PRESETS = {
         price: 39.6,
         cashback: 5.2,
         rating: '8.0',
+        ratingCount: 736,
         luggage: 6,
     },
     'opel benfica': {
@@ -66,6 +70,7 @@ const OFFER_PRESETS = {
         price: 22.7,
         cashback: 3.7,
         rating: '7.5',
+        ratingCount: 412,
         luggage: 4,
     },
     'autocarro marcopolo iveco': {
@@ -79,6 +84,7 @@ const OFFER_PRESETS = {
         price: 96.4,
         cashback: 12.4,
         rating: '8.8',
+        ratingCount: 322,
         luggage: 14,
     },
     'autocarro man': {
@@ -92,12 +98,13 @@ const OFFER_PRESETS = {
         price: 104.9,
         cashback: 13.8,
         rating: '9.0',
+        ratingCount: 287,
         luggage: 16,
     },
 };
 
 const SORT_OPTIONS = [
-    { value: 'recommended', label: 'Recomendado' },
+    { value: 'recommended', label: 'Mais procurados' },
     { value: 'price_asc', label: 'Preço mais baixo' },
     { value: 'price_desc', label: 'Preço mais alto' },
     { value: 'rating', label: 'Melhor avaliação' },
@@ -129,6 +136,7 @@ function getOfferPreset(vehicle) {
             price: 29.9,
             cashback: 3.9,
             rating: '8.0',
+            ratingCount: 250,
             luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
         }
     );
@@ -153,7 +161,7 @@ function buildSearchOffer(vehicle, search) {
         id: vehicle.id,
         vehicle,
         title: vehicle.name,
-        subtitle: `ou ${preset.categoryLabel} semelhante`,
+        subtitle: `ou ${preset.categoryLabel} similar`,
         categoryLabel: preset.categoryLabel,
         supplier: preset.supplier,
         pickupMode: preset.pickupMode,
@@ -164,8 +172,10 @@ function buildSearchOffer(vehicle, search) {
         price: computedPrice,
         cashback: preset.cashback,
         rating: preset.rating,
+        ratingCount: preset.ratingCount,
         luggage: preset.luggage,
         transmission: preset.features.includes('Automático') ? 'Automático' : 'Manual',
+        mileageLabel: 'Quilometragem ilimitada',
         fuelLabel,
         pickupLabel: search?.pickupLocationData?.label || search?.pickupLocation || vehicle.base || 'Portugal',
         dropoffLabel:
@@ -191,9 +201,14 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+    const [selectedPickupModes, setSelectedPickupModes] = useState([]);
     const [selectedFeatures, setSelectedFeatures] = useState([]);
     const [selectedRatings, setSelectedRatings] = useState([]);
+    const [selectedProtections, setSelectedProtections] = useState([]);
+    const [selectedIncluded, setSelectedIncluded] = useState([]);
+    const [selectedMileage, setSelectedMileage] = useState([]);
     const [selectedPayments, setSelectedPayments] = useState([]);
+    const [promoOnly, setPromoOnly] = useState(false);
     const [priceMin, setPriceMin] = useState('');
     const [priceMax, setPriceMax] = useState('');
     const [sortOrder, setSortOrder] = useState('recommended');
@@ -205,8 +220,12 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
 
     const categoryOptions = useMemo(() => groupByLabel(offers, (o) => o.categoryLabel, true), [offers]);
     const supplierOptions = useMemo(() => groupByLabel(offers, (o) => o.supplier, true), [offers]);
-    const featureOptions = useMemo(() => groupByList(offers, (o) => o.features), [offers]);
+    const pickupModeOptions = useMemo(() => groupByLabel(offers, (o) => o.pickupMode, false), [offers]);
     const paymentOptions = useMemo(() => groupByLabel(offers, (o) => o.payment, false), [offers]);
+    const mileageOptions = useMemo(() => groupByLabel(offers, (o) => o.mileageLabel, false), [offers]);
+    const featureOptions = useMemo(() => groupByList(offers, (o) => o.features), [offers]);
+    const protectionOptions = useMemo(() => groupByList(offers, (o) => o.protections), [offers]);
+    const includedOptions = useMemo(() => groupByList(offers, (o) => o.included), [offers]);
     const ratingOptions = useMemo(() => {
         const labels = ['Excelente', 'Muito Bom', 'Bom', 'Regular'];
         return labels
@@ -235,10 +254,15 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     const filteredOffers = useMemo(() => {
         let result = offers.filter((offer) => {
             if (statusFilter === 'available' && offer.vehicle.availability === 'inoperational') return false;
+            if (promoOnly && offer.cashback < 5) return false;
             if (selectedCategories.length && !selectedCategories.includes(offer.categoryLabel)) return false;
             if (selectedSuppliers.length && !selectedSuppliers.includes(offer.supplier)) return false;
+            if (selectedPickupModes.length && !selectedPickupModes.includes(offer.pickupMode)) return false;
             if (selectedFeatures.length && !selectedFeatures.every((f) => offer.features.includes(f))) return false;
             if (selectedRatings.length && !selectedRatings.includes(getRatingBucketLabel(offer.rating))) return false;
+            if (selectedProtections.length && !selectedProtections.every((p) => offer.protections.includes(p))) return false;
+            if (selectedIncluded.length && !selectedIncluded.every((p) => offer.included.includes(p))) return false;
+            if (selectedMileage.length && !selectedMileage.includes(offer.mileageLabel)) return false;
             if (selectedPayments.length && !selectedPayments.includes(offer.payment)) return false;
             if (priceMin !== '' && offer.price < Number(priceMin)) return false;
             if (priceMax !== '' && offer.price > Number(priceMax)) return false;
@@ -256,28 +280,39 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
         statusFilter,
         selectedCategories,
         selectedSuppliers,
+        selectedPickupModes,
         selectedFeatures,
         selectedRatings,
+        selectedProtections,
+        selectedIncluded,
+        selectedMileage,
         selectedPayments,
+        promoOnly,
         priceMin,
         priceMax,
         sortOrder,
     ]);
 
     const activeFilterTags = [
+        ...(promoOnly ? [{ type: 'promo', value: 'Goleada de Ofertas' }] : []),
         ...selectedCategories.map((value) => ({ type: 'category', value })),
         ...selectedSuppliers.map((value) => ({ type: 'supplier', value })),
+        ...selectedPickupModes.map((value) => ({ type: 'pickup', value })),
         ...selectedFeatures.map((value) => ({ type: 'feature', value })),
         ...selectedRatings.map((value) => ({ type: 'rating', value })),
+        ...selectedProtections.map((value) => ({ type: 'protection', value })),
+        ...selectedIncluded.map((value) => ({ type: 'included', value })),
+        ...selectedMileage.map((value) => ({ type: 'mileage', value })),
         ...selectedPayments.map((value) => ({ type: 'payment', value })),
     ];
 
     const searchSummary = [
-        search?.pickupLocation ? `Levantamento em ${search.pickupLocation}` : null,
-        search?.returnLocation ? `devolução em ${search.returnLocation}` : null,
+        search?.pickupLocation ? `Levantamento: ${search.pickupLocation}` : null,
+        search?.returnLocation ? `Devolução: ${search.returnLocation}` : null,
         search?.pickupDate && search?.pickupTime && search?.returnDate && search?.returnTime
             ? `${search.pickupDate} ${search.pickupTime} → ${search.returnDate} ${search.returnTime}`
             : null,
+        search?.residence ? `Residência: ${search.residence}` : null,
     ]
         .filter(Boolean)
         .join(' · ');
@@ -287,10 +322,15 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     }
 
     function clearFilters() {
+        setPromoOnly(false);
         setSelectedCategories([]);
         setSelectedSuppliers([]);
+        setSelectedPickupModes([]);
         setSelectedFeatures([]);
         setSelectedRatings([]);
+        setSelectedProtections([]);
+        setSelectedIncluded([]);
+        setSelectedMileage([]);
         setSelectedPayments([]);
         setPriceMin(String(minAvailablePrice));
         setPriceMax(String(maxAvailablePrice));
@@ -299,17 +339,22 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     }
 
     function removeActiveFilter(tag) {
+        if (tag.type === 'promo') setPromoOnly(false);
         if (tag.type === 'category') toggleValue(setSelectedCategories, tag.value);
         if (tag.type === 'supplier') toggleValue(setSelectedSuppliers, tag.value);
+        if (tag.type === 'pickup') toggleValue(setSelectedPickupModes, tag.value);
         if (tag.type === 'feature') toggleValue(setSelectedFeatures, tag.value);
         if (tag.type === 'rating') toggleValue(setSelectedRatings, tag.value);
+        if (tag.type === 'protection') toggleValue(setSelectedProtections, tag.value);
+        if (tag.type === 'included') toggleValue(setSelectedIncluded, tag.value);
+        if (tag.type === 'mileage') toggleValue(setSelectedMileage, tag.value);
         if (tag.type === 'payment') toggleValue(setSelectedPayments, tag.value);
     }
 
     return (
-        <div className="min-h-screen bg-paper text-ink">
-            <header className="sticky top-0 z-10 border-b border-border bg-paper">
-                <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+        <div className="min-h-screen bg-paper-2 text-ink">
+            <header className="sticky top-0 z-20 border-b border-border bg-paper">
+                <div className="mx-auto flex h-14 max-w-[1320px] items-center justify-between px-6">
                     <button
                         type="button"
                         onClick={onBack}
@@ -327,8 +372,8 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                 </div>
             </header>
 
-            <section className="bg-paper-2 py-6">
-                <div className="mx-auto max-w-7xl px-6">
+            <section className="py-5">
+                <div className="mx-auto max-w-[1320px] px-6">
                     <div className="rounded-md border border-border bg-paper px-5 py-4 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -351,21 +396,49 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                         </div>
                     </div>
 
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
-                        <aside>
+                    <div className="mt-5 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+                        <aside className="lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto">
                             <div className="rounded-md border border-border bg-paper shadow-sm">
                                 <div className="flex items-center justify-between border-b border-border-soft px-4 py-3">
                                     <h3 className="text-sm font-semibold tracking-wide text-ink">Filtros</h3>
                                     <button
                                         type="button"
                                         onClick={clearFilters}
-                                        className="text-xs font-medium text-muted underline hover:text-ink"
+                                        className="text-xs font-medium text-[#0f6bdf] hover:text-[#0a55b4]"
                                     >
-                                        Limpar
+                                        Limpar filtros
                                     </button>
                                 </div>
 
                                 <div className="space-y-5 px-4 py-4">
+                                    <FilterSection title="Promoções">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPromoOnly((current) => !current)}
+                                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                                promoOnly
+                                                    ? 'border-amber-300 bg-amber-50 text-amber-800'
+                                                    : 'border-border bg-paper-2 text-ink hover:border-ink/30'
+                                            }`}
+                                        >
+                                            Goleada de Ofertas
+                                        </button>
+                                    </FilterSection>
+
+                                    <FilterSection title="Tipos de Pagamento">
+                                        <div className="space-y-1.5">
+                                            {paymentOptions.map((option) => (
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={option.count}
+                                                    checked={selectedPayments.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedPayments, option.label)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
                                     <FilterSection title="Preço total">
                                         <div className="grid grid-cols-2 gap-2">
                                             <label className="rounded-md border border-border bg-paper-2 px-3 py-2">
@@ -400,7 +473,35 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                         </p>
                                     </FilterSection>
 
-                                    <FilterSection title="Categorias">
+                                    <FilterSection title="Locação">
+                                        <div className="space-y-1.5">
+                                            {pickupModeOptions.map((option) => (
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={option.count}
+                                                    checked={selectedPickupModes.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedPickupModes, option.label)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
+                                    <FilterSection title="Características">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {featureOptions.map((option) => (
+                                                <PillButton
+                                                    key={option.label}
+                                                    active={selectedFeatures.includes(option.label)}
+                                                    onClick={() => toggleValue(setSelectedFeatures, option.label)}
+                                                >
+                                                    {option.label}
+                                                </PillButton>
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
+                                    <FilterSection title="Sub-Categoria">
                                         <div className="space-y-1.5">
                                             {categoryOptions.map((option) => (
                                                 <SidebarCheckbox
@@ -428,20 +529,6 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                         </div>
                                     </FilterSection>
 
-                                    <FilterSection title="Características">
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {featureOptions.map((option) => (
-                                                <PillButton
-                                                    key={option.label}
-                                                    active={selectedFeatures.includes(option.label)}
-                                                    onClick={() => toggleValue(setSelectedFeatures, option.label)}
-                                                >
-                                                    {option.label}
-                                                </PillButton>
-                                            ))}
-                                        </div>
-                                    </FilterSection>
-
                                     <FilterSection title="Avaliações">
                                         <div className="flex flex-wrap gap-1.5">
                                             {ratingOptions.map((option) => (
@@ -456,15 +543,43 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                         </div>
                                     </FilterSection>
 
-                                    <FilterSection title="Pagamento">
+                                    <FilterSection title="Coberturas">
                                         <div className="space-y-1.5">
-                                            {paymentOptions.map((option) => (
+                                            {protectionOptions.map((option) => (
                                                 <SidebarCheckbox
                                                     key={option.label}
                                                     label={option.label}
                                                     meta={option.count}
-                                                    checked={selectedPayments.includes(option.label)}
-                                                    onChange={() => toggleValue(setSelectedPayments, option.label)}
+                                                    checked={selectedProtections.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedProtections, option.label)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
+                                    <FilterSection title="Itens Inclusos">
+                                        <div className="space-y-1.5">
+                                            {includedOptions.map((option) => (
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={option.count}
+                                                    checked={selectedIncluded.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedIncluded, option.label)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
+                                    <FilterSection title="Quilometragem">
+                                        <div className="space-y-1.5">
+                                            {mileageOptions.map((option) => (
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={option.count}
+                                                    checked={selectedMileage.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedMileage, option.label)}
                                                 />
                                             ))}
                                         </div>
@@ -488,14 +603,14 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                         </FilterChip>
                                     </div>
                                     <h2 className="mt-3 text-2xl font-bold tracking-tight text-ink">
-                                        {filteredOffers.length} viatura{filteredOffers.length === 1 ? '' : 's'} disponíve
-                                        {filteredOffers.length === 1 ? 'l' : 'is'}
+                                        {filteredOffers.length} viatura{filteredOffers.length === 1 ? '' : 's'} encontrada
+                                        {filteredOffers.length === 1 ? '' : 's'}
                                     </h2>
                                 </div>
 
                                 <label className="flex items-center gap-2 rounded-md border border-border bg-paper px-3 py-2 text-sm shadow-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                                        Ordenar
+                                        Ordenar por
                                     </span>
                                     <select
                                         value={sortOrder}
@@ -521,17 +636,17 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                             key={`${tag.type}-${tag.value}`}
                                             type="button"
                                             onClick={() => removeActiveFilter(tag)}
-                                            className="rounded-sm border border-border bg-paper-3 px-2 py-1 text-xs font-medium text-ink hover:border-ink/40"
+                                            className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-900 hover:border-sky-400"
                                         >
-                                            {tag.value} <span className="text-muted">×</span>
+                                            {tag.value} <span className="ml-1">×</span>
                                         </button>
                                     ))}
                                     <button
                                         type="button"
                                         onClick={clearFilters}
-                                        className="ml-1 text-xs font-medium text-muted underline hover:text-ink"
+                                        className="ml-1 text-xs font-medium text-[#0f6bdf] hover:text-[#0a55b4]"
                                     >
-                                        Limpar
+                                        Limpar filtros
                                     </button>
                                 </div>
                             )}
@@ -541,7 +656,7 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                                     Nenhuma viatura corresponde aos critérios selecionados.
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {filteredOffers.map((offer) => (
                                         <SearchOfferCard key={offer.id} offer={offer} onReserve={onGoToLogin} />
                                     ))}
@@ -621,8 +736,8 @@ function PillButton({ active, onClick, children }) {
         <button
             type="button"
             onClick={onClick}
-            className={`rounded-sm border px-2.5 py-1 text-xs transition ${
-                active ? 'border-ink bg-ink text-paper' : 'border-border bg-paper-2 text-ink hover:border-ink/40'
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+                active ? 'border-sky-500 bg-sky-50 text-sky-900' : 'border-border bg-paper-2 text-ink hover:border-ink/30'
             }`}
         >
             {children}
@@ -632,73 +747,86 @@ function PillButton({ active, onClick, children }) {
 
 function SearchOfferCard({ offer, onReserve }) {
     const isInoperational = offer.vehicle.availability === 'inoperational';
+    const ratingBucket = getRatingBucketLabel(offer.rating);
 
     return (
         <article className="overflow-hidden rounded-md border border-border bg-paper shadow-sm transition hover:border-ink/30">
-            <div className="grid gap-0 md:grid-cols-[200px_minmax(0,1fr)_220px]">
-                <div className="border-b border-border-soft md:border-b-0 md:border-r">
-                    <div className="aspect-[16/10] overflow-hidden bg-paper-2">
+            <div className="grid gap-0 lg:grid-cols-[260px_minmax(0,1fr)_240px]">
+                <div className="bg-paper-2">
+                    <div className="aspect-[5/4] overflow-hidden">
                         <VehicleMedia
                             vehicle={offer.vehicle}
                             imageClassName="h-full w-full object-cover"
                             className="h-full w-full"
                         />
                     </div>
-                    <div className="flex items-center justify-between px-3 py-2 text-xs">
-                        <span className="font-medium text-ink">{offer.supplier}</span>
-                        <span className="rounded-sm border border-border bg-paper-2 px-1.5 py-0.5 font-mono font-semibold text-ink">
-                            {offer.rating}
-                        </span>
+                    <div className="border-t border-border-soft px-3 py-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-ink">{offer.supplier}</span>
+                            <div className="flex items-center gap-1">
+                                <span className="rounded-sm bg-[#0f6bdf] px-1.5 py-0.5 font-mono text-xs font-bold text-white">
+                                    {offer.rating}
+                                </span>
+                            </div>
+                        </div>
+                        <p className="mt-1 text-[11px] text-muted">
+                            <span className="font-semibold text-ink">{ratingBucket}</span> · {offer.ratingCount} avaliações
+                        </p>
                     </div>
                 </div>
 
-                <div className="p-4">
+                <div className="border-t border-border-soft p-4 lg:border-l lg:border-t-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
-                            <h3 className="text-lg font-bold tracking-tight text-ink">{offer.title}</h3>
+                            <h3 className="text-xl font-bold tracking-tight text-ink">{offer.title}</h3>
                             <p className="mt-0.5 text-xs text-muted">{offer.subtitle}</p>
                         </div>
-                        <span
-                            className={`rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                                isInoperational
-                                    ? 'border-danger/30 bg-danger-soft text-danger'
-                                    : 'border-positive/30 bg-positive-soft text-positive'
-                            }`}
-                        >
-                            {isInoperational ? 'Inoperacional' : 'Operacional'}
-                        </span>
+                        {isInoperational && (
+                            <span className="rounded-sm border border-danger/30 bg-danger-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-danger">
+                                Inoperacional
+                            </span>
+                        )}
                     </div>
 
-                    <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink">
-                        <SpecItem>{offer.vehicle.seats} lugares</SpecItem>
-                        <SpecItem>{offer.luggage} bagagens</SpecItem>
-                        <SpecItem>{offer.transmission}</SpecItem>
-                        <SpecItem>{offer.fuelLabel}</SpecItem>
-                        <SpecItem>Km ilimitada</SpecItem>
-                    </ul>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        <SpecPill>{offer.vehicle.seats} lugares</SpecPill>
+                        <SpecPill>{offer.luggage} bagagens</SpecPill>
+                        <SpecPill>{offer.transmission}</SpecPill>
+                        <SpecPill>{offer.fuelLabel}</SpecPill>
+                    </div>
 
-                    <ul className="mt-3 space-y-1 text-xs text-muted">
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                        Cashback de {formatEuro(offer.cashback)}
+                    </div>
+
+                    <ul className="mt-3 space-y-1 text-sm text-ink">
                         {offer.protections.map((item) => (
-                            <li key={item}>— {item}</li>
+                            <li key={item} className="flex items-start gap-2">
+                                <span className="mt-0.5 text-positive">✓</span>
+                                <span>{item}</span>
+                            </li>
                         ))}
+                        <li className="flex items-start gap-2 text-muted">
+                            <span className="mt-0.5">·</span>
+                            <span>{offer.mileageLabel}</span>
+                        </li>
                     </ul>
 
-                    <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3 text-xs text-muted">
-                        <span className="font-medium text-ink">{offer.pickupLabel}</span>
-                        <span>·</span>
-                        <span>{offer.pickupMode}</span>
+                    <div className="mt-3 rounded-md bg-paper-2 px-3 py-2 text-sm">
+                        <p className="font-semibold text-ink">{offer.pickupLabel}</p>
+                        <p className="mt-0.5 text-xs text-muted">{offer.pickupMode}</p>
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between border-t border-border-soft p-4 md:border-l md:border-t-0">
+                <div className="flex flex-col justify-between border-t border-border-soft p-4 lg:border-l lg:border-t-0">
                     <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">A sua reserva</p>
-                        <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-ink">
+                        <p className="mt-1 font-mono text-3xl font-bold tracking-tight text-ink">
                             {formatEuro(offer.price)}
                         </p>
-                        <p className="mt-0.5 text-xs text-positive">Cancelamento grátis</p>
+                        <p className="mt-1 text-xs font-semibold text-positive">Cancelamento grátis</p>
 
-                        <div className="mt-3 space-y-0.5 text-xs text-muted">
+                        <div className="mt-3 space-y-1 text-xs text-muted">
                             <p>{offer.payment}</p>
                             {offer.included.map((item) => (
                                 <p key={item}>{item}</p>
@@ -710,7 +838,7 @@ function SearchOfferCard({ offer, onReserve }) {
                         type="button"
                         onClick={onReserve}
                         disabled={isInoperational}
-                        className="mt-4 w-full rounded-md bg-ink px-3 py-2 text-sm font-semibold text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:bg-muted-soft"
+                        className="mt-4 w-full rounded-md bg-[#17894e] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#117241] disabled:cursor-not-allowed disabled:bg-muted-soft"
                     >
                         Continuar
                     </button>
@@ -720,6 +848,10 @@ function SearchOfferCard({ offer, onReserve }) {
     );
 }
 
-function SpecItem({ children }) {
-    return <li className="font-medium">{children}</li>;
+function SpecPill({ children }) {
+    return (
+        <span className="rounded-sm border border-border bg-paper-2 px-2 py-0.5 text-xs font-medium text-ink">
+            {children}
+        </span>
+    );
 }
