@@ -96,6 +96,13 @@ const OFFER_PRESETS = {
     },
 };
 
+const SORT_OPTIONS = [
+    { value: 'recommended', label: 'Recomendado' },
+    { value: 'price_asc', label: 'Preço mais baixo' },
+    { value: 'price_desc', label: 'Preço mais alto' },
+    { value: 'rating', label: 'Melhor avaliação' },
+];
+
 function formatEuro(value) {
     return new Intl.NumberFormat('pt-PT', {
         style: 'currency',
@@ -109,25 +116,38 @@ function normalizeText(value) {
 }
 
 function getOfferPreset(vehicle) {
-    return OFFER_PRESETS[normalizeText(vehicle.name)] || {
-        categoryLabel: vehicle.category === 'bus' ? 'Especial' : vehicle.category === 'van' ? 'Furgão' : 'Compacto',
-        supplier: 'Rent a Star',
-        pickupMode: 'Cidade',
-        features: ['Ar Condicionado', 'Manual'],
-        protections: ['Seguro de Responsabilidade Civil'],
-        included: ['Condutor Adicional'],
-        payment: 'Pague agora',
-        price: 29.9,
-        cashback: 3.9,
-        rating: '8.0',
-        luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
-    };
+    return (
+        OFFER_PRESETS[normalizeText(vehicle.name)] || {
+            categoryLabel:
+                vehicle.category === 'bus' ? 'Especial' : vehicle.category === 'van' ? 'Furgão' : 'Compacto',
+            supplier: 'Rent a Star',
+            pickupMode: 'Cidade',
+            features: ['Ar Condicionado', 'Manual'],
+            protections: ['Seguro de Responsabilidade Civil'],
+            included: ['Condutor Adicional'],
+            payment: 'Pague agora',
+            price: 29.9,
+            cashback: 3.9,
+            rating: '8.0',
+            luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
+        }
+    );
 }
 
 function buildSearchOffer(vehicle, search) {
     const preset = getOfferPreset(vehicle);
-    const distanceExtra = search?.routeData?.distance_km ? Math.min(search.routeData.distance_km * 0.12, 22) : 0;
+    const distanceExtra = search?.routeData?.distance_km
+        ? Math.min(search.routeData.distance_km * 0.12, 22)
+        : 0;
     const computedPrice = Number((preset.price + distanceExtra).toFixed(2));
+
+    const fuelLabel = preset.features.includes('Elétrico')
+        ? 'Elétrico'
+        : preset.features.includes('Híbrido')
+        ? 'Híbrido'
+        : preset.features.includes('Diesel')
+        ? 'Diesel'
+        : 'Gasolina';
 
     return {
         id: vehicle.id,
@@ -146,14 +166,7 @@ function buildSearchOffer(vehicle, search) {
         rating: preset.rating,
         luggage: preset.luggage,
         transmission: preset.features.includes('Automático') ? 'Automático' : 'Manual',
-        mileageLabel: 'Quilometragem ilimitada',
-        fuelLabel: preset.features.includes('Elétrico')
-            ? 'Elétrico'
-            : preset.features.includes('Híbrido')
-            ? 'Híbrido'
-            : preset.features.includes('Diesel')
-            ? 'Diesel'
-            : 'Gasolina',
+        fuelLabel,
         pickupLabel: search?.pickupLocationData?.label || search?.pickupLocation || vehicle.base || 'Portugal',
         dropoffLabel:
             search?.returnLocationData?.label ||
@@ -178,97 +191,40 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [selectedSuppliers, setSelectedSuppliers] = useState([]);
-    const [selectedPickupModes, setSelectedPickupModes] = useState([]);
     const [selectedFeatures, setSelectedFeatures] = useState([]);
     const [selectedRatings, setSelectedRatings] = useState([]);
-    const [selectedProtections, setSelectedProtections] = useState([]);
-    const [selectedIncluded, setSelectedIncluded] = useState([]);
-    const [selectedMileage, setSelectedMileage] = useState([]);
     const [selectedPayments, setSelectedPayments] = useState([]);
-    const [promoOnly, setPromoOnly] = useState(false);
     const [priceMin, setPriceMin] = useState('');
     const [priceMax, setPriceMax] = useState('');
     const [sortOrder, setSortOrder] = useState('recommended');
 
-    const offers = useMemo(() => vehicles.map((vehicle) => buildSearchOffer(vehicle, search)), [vehicles, search]);
+    const offers = useMemo(
+        () => vehicles.map((vehicle) => buildSearchOffer(vehicle, search)),
+        [vehicles, search]
+    );
 
-    const categoryOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            const current = groups.get(offer.categoryLabel) || { label: offer.categoryLabel, count: 0, minPrice: offer.price };
-            current.count += 1;
-            current.minPrice = Math.min(current.minPrice, offer.price);
-            groups.set(offer.categoryLabel, current);
-        });
-        return [...groups.values()].sort((a, b) => a.minPrice - b.minPrice);
-    }, [offers]);
-
-    const supplierOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            const current = groups.get(offer.supplier) || { label: offer.supplier, count: 0, minPrice: offer.price };
-            current.count += 1;
-            current.minPrice = Math.min(current.minPrice, offer.price);
-            groups.set(offer.supplier, current);
-        });
-        return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
-    }, [offers]);
-
-    const pickupModeOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            const current = groups.get(offer.pickupMode) || { label: offer.pickupMode, count: 0 };
-            current.count += 1;
-            groups.set(offer.pickupMode, current);
-        });
-        return [...groups.values()];
-    }, [offers]);
-
-    const featureOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            offer.features.forEach((feature) => groups.set(feature, (groups.get(feature) || 0) + 1));
-        });
-        return [...groups.entries()].map(([label, count]) => ({ label, count }));
-    }, [offers]);
-
-    const protectionOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            offer.protections.forEach((item) => groups.set(item, (groups.get(item) || 0) + 1));
-        });
-        return [...groups.entries()].map(([label, count]) => ({ label, count }));
-    }, [offers]);
-
-    const includedOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => {
-            offer.included.forEach((item) => groups.set(item, (groups.get(item) || 0) + 1));
-        });
-        return [...groups.entries()].map(([label, count]) => ({ label, count }));
-    }, [offers]);
-
-    const mileageOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => groups.set(offer.mileageLabel, (groups.get(offer.mileageLabel) || 0) + 1));
-        return [...groups.entries()].map(([label, count]) => ({ label, count }));
-    }, [offers]);
-
-    const paymentOptions = useMemo(() => {
-        const groups = new Map();
-        offers.forEach((offer) => groups.set(offer.payment, (groups.get(offer.payment) || 0) + 1));
-        return [...groups.entries()].map(([label, count]) => ({ label, count }));
-    }, [offers]);
-
+    const categoryOptions = useMemo(() => groupByLabel(offers, (o) => o.categoryLabel, true), [offers]);
+    const supplierOptions = useMemo(() => groupByLabel(offers, (o) => o.supplier, true), [offers]);
+    const featureOptions = useMemo(() => groupByList(offers, (o) => o.features), [offers]);
+    const paymentOptions = useMemo(() => groupByLabel(offers, (o) => o.payment, false), [offers]);
     const ratingOptions = useMemo(() => {
         const labels = ['Excelente', 'Muito Bom', 'Bom', 'Regular'];
         return labels
-            .map((label) => ({ label, count: offers.filter((offer) => getRatingBucketLabel(offer.rating) === label).length }))
+            .map((label) => ({
+                label,
+                count: offers.filter((offer) => getRatingBucketLabel(offer.rating) === label).length,
+            }))
             .filter((item) => item.count > 0);
     }, [offers]);
 
-    const minAvailablePrice = useMemo(() => (offers.length ? Math.floor(Math.min(...offers.map((offer) => offer.price))) : 0), [offers]);
-    const maxAvailablePrice = useMemo(() => (offers.length ? Math.ceil(Math.max(...offers.map((offer) => offer.price))) : 0), [offers]);
+    const minAvailablePrice = useMemo(
+        () => (offers.length ? Math.floor(Math.min(...offers.map((o) => o.price))) : 0),
+        [offers]
+    );
+    const maxAvailablePrice = useMemo(
+        () => (offers.length ? Math.ceil(Math.max(...offers.map((o) => o.price))) : 0),
+        [offers]
+    );
 
     useEffect(() => {
         if (!offers.length) return;
@@ -279,15 +235,10 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     const filteredOffers = useMemo(() => {
         let result = offers.filter((offer) => {
             if (statusFilter === 'available' && offer.vehicle.availability === 'inoperational') return false;
-            if (promoOnly && offer.cashback < 5) return false;
             if (selectedCategories.length && !selectedCategories.includes(offer.categoryLabel)) return false;
             if (selectedSuppliers.length && !selectedSuppliers.includes(offer.supplier)) return false;
-            if (selectedPickupModes.length && !selectedPickupModes.includes(offer.pickupMode)) return false;
-            if (selectedFeatures.length && !selectedFeatures.every((feature) => offer.features.includes(feature))) return false;
+            if (selectedFeatures.length && !selectedFeatures.every((f) => offer.features.includes(f))) return false;
             if (selectedRatings.length && !selectedRatings.includes(getRatingBucketLabel(offer.rating))) return false;
-            if (selectedProtections.length && !selectedProtections.every((item) => offer.protections.includes(item))) return false;
-            if (selectedIncluded.length && !selectedIncluded.every((item) => offer.included.includes(item))) return false;
-            if (selectedMileage.length && !selectedMileage.includes(offer.mileageLabel)) return false;
             if (selectedPayments.length && !selectedPayments.includes(offer.payment)) return false;
             if (priceMin !== '' && offer.price < Number(priceMin)) return false;
             if (priceMax !== '' && offer.price > Number(priceMax)) return false;
@@ -300,46 +251,46 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
         else result = [...result].sort((a, b) => a.price - b.price || Number(b.rating) - Number(a.rating));
 
         return result;
-    }, [offers, statusFilter, selectedCategories, selectedSuppliers, selectedPickupModes, selectedFeatures, selectedRatings, selectedProtections, selectedIncluded, selectedMileage, selectedPayments, promoOnly, priceMin, priceMax, sortOrder]);
+    }, [
+        offers,
+        statusFilter,
+        selectedCategories,
+        selectedSuppliers,
+        selectedFeatures,
+        selectedRatings,
+        selectedPayments,
+        priceMin,
+        priceMax,
+        sortOrder,
+    ]);
 
     const activeFilterTags = [
-        ...(promoOnly ? [{ type: 'promo', value: 'Goleada de Ofertas' }] : []),
         ...selectedCategories.map((value) => ({ type: 'category', value })),
         ...selectedSuppliers.map((value) => ({ type: 'supplier', value })),
-        ...selectedPickupModes.map((value) => ({ type: 'pickup', value })),
         ...selectedFeatures.map((value) => ({ type: 'feature', value })),
         ...selectedRatings.map((value) => ({ type: 'rating', value })),
-        ...selectedProtections.map((value) => ({ type: 'protection', value })),
-        ...selectedIncluded.map((value) => ({ type: 'included', value })),
-        ...selectedMileage.map((value) => ({ type: 'mileage', value })),
         ...selectedPayments.map((value) => ({ type: 'payment', value })),
     ];
 
     const searchSummary = [
-        search?.pickupLocation ? `Levantamento: ${search.pickupLocation}` : null,
-        search?.returnLocation ? `Devolução: ${search.returnLocation}` : null,
+        search?.pickupLocation ? `Levantamento em ${search.pickupLocation}` : null,
+        search?.returnLocation ? `devolução em ${search.returnLocation}` : null,
         search?.pickupDate && search?.pickupTime && search?.returnDate && search?.returnTime
             ? `${search.pickupDate} ${search.pickupTime} → ${search.returnDate} ${search.returnTime}`
             : null,
-        search?.residence ? `Residência: ${search.residence}` : null,
     ]
         .filter(Boolean)
         .join(' · ');
 
-    function toggleFilterValue(setter, value) {
+    function toggleValue(setter, value) {
         setter((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
     }
 
-    function clearSearchFilters() {
-        setPromoOnly(false);
+    function clearFilters() {
         setSelectedCategories([]);
         setSelectedSuppliers([]);
-        setSelectedPickupModes([]);
         setSelectedFeatures([]);
         setSelectedRatings([]);
-        setSelectedProtections([]);
-        setSelectedIncluded([]);
-        setSelectedMileage([]);
         setSelectedPayments([]);
         setPriceMin(String(minAvailablePrice));
         setPriceMax(String(maxAvailablePrice));
@@ -348,156 +299,173 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     }
 
     function removeActiveFilter(tag) {
-        if (tag.type === 'promo') setPromoOnly(false);
-        if (tag.type === 'category') toggleFilterValue(setSelectedCategories, tag.value);
-        if (tag.type === 'supplier') toggleFilterValue(setSelectedSuppliers, tag.value);
-        if (tag.type === 'pickup') toggleFilterValue(setSelectedPickupModes, tag.value);
-        if (tag.type === 'feature') toggleFilterValue(setSelectedFeatures, tag.value);
-        if (tag.type === 'rating') toggleFilterValue(setSelectedRatings, tag.value);
-        if (tag.type === 'protection') toggleFilterValue(setSelectedProtections, tag.value);
-        if (tag.type === 'included') toggleFilterValue(setSelectedIncluded, tag.value);
-        if (tag.type === 'mileage') toggleFilterValue(setSelectedMileage, tag.value);
-        if (tag.type === 'payment') toggleFilterValue(setSelectedPayments, tag.value);
+        if (tag.type === 'category') toggleValue(setSelectedCategories, tag.value);
+        if (tag.type === 'supplier') toggleValue(setSelectedSuppliers, tag.value);
+        if (tag.type === 'feature') toggleValue(setSelectedFeatures, tag.value);
+        if (tag.type === 'rating') toggleValue(setSelectedRatings, tag.value);
+        if (tag.type === 'payment') toggleValue(setSelectedPayments, tag.value);
     }
 
     return (
-        <div className="min-h-screen bg-paper-2 text-ink">
-            <div className="border-b border-border-soft bg-paper">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-                    <button type="button" onClick={onBack} className="rounded-2xl border border-border px-4 py-2 text-sm font-medium hover:border-ink/20">
+        <div className="min-h-screen bg-paper text-ink">
+            <header className="sticky top-0 z-10 border-b border-border bg-paper">
+                <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-ink hover:bg-paper-2"
+                    >
                         ← Voltar
                     </button>
-                    <button type="button" onClick={onGoToLogin} className="text-sm font-medium text-ink underline">
+                    <button
+                        type="button"
+                        onClick={onGoToLogin}
+                        className="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-paper hover:bg-ink-soft"
+                    >
                         Iniciar sessão
                     </button>
                 </div>
-            </div>
+            </header>
 
-            <section className="bg-paper-2 py-8">
+            <section className="bg-paper-2 py-6">
                 <div className="mx-auto max-w-7xl px-6">
-                    <div className="rounded-[28px] border border-border bg-paper px-6 py-4 shadow-sm">
+                    <div className="rounded-md border border-border bg-paper px-5 py-4 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="text-lg font-bold text-ink">
-                                    {search?.pickupLocationData?.label || search?.pickupLocation || 'Portugal'} <span className="px-2 text-muted">›</span> {search?.returnLocationData?.label || search?.returnLocation || search?.pickupLocationData?.label || search?.pickupLocation || 'Portugal'}
+                                <p className="text-lg font-semibold tracking-tight text-ink">
+                                    {search?.pickupLocationData?.label || search?.pickupLocation || 'Portugal'}
+                                    <span className="px-2 text-muted">→</span>
+                                    {search?.returnLocationData?.label ||
+                                        search?.returnLocation ||
+                                        search?.pickupLocationData?.label ||
+                                        search?.pickupLocation ||
+                                        'Portugal'}
                                 </p>
-                                <p className="mt-1 text-sm text-muted">{searchSummary}</p>
+                                {searchSummary && <p className="mt-1 text-sm text-muted">{searchSummary}</p>}
                             </div>
                             {search?.routeData && (
-                                <div className="rounded-2xl bg-paper-2 px-4 py-2 text-sm text-ink">
-                                    {search.routeData.distance_km} km · {search.routeData.duration_min} min · {search.routeData.scope_label || search.routeData.route_kind}
+                                <div className="rounded-md border border-border bg-paper-2 px-3 py-1.5 font-mono text-xs text-ink">
+                                    {search.routeData.distance_km} km · {search.routeData.duration_min} min
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-                        <aside className="space-y-5">
-                            <div className="overflow-hidden rounded-[28px] border border-border bg-paper shadow-sm">
-                                <div className="flex items-center justify-between border-b border-border-soft px-5 py-4">
-                                    <h3 className="text-3xl font-bold tracking-tight text-ink">Filtros</h3>
-                                    <button type="button" onClick={clearSearchFilters} className="text-sm font-medium text-[#0f6bdf] hover:text-[#0a55b4]">
-                                        Limpar filtros
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+                        <aside>
+                            <div className="rounded-md border border-border bg-paper shadow-sm">
+                                <div className="flex items-center justify-between border-b border-border-soft px-4 py-3">
+                                    <h3 className="text-sm font-semibold tracking-wide text-ink">Filtros</h3>
+                                    <button
+                                        type="button"
+                                        onClick={clearFilters}
+                                        className="text-xs font-medium text-muted underline hover:text-ink"
+                                    >
+                                        Limpar
                                     </button>
                                 </div>
 
-                                <div className="space-y-5 px-5 py-5">
-                                    <FilterSection title="Promoções">
-                                        <button type="button" onClick={() => setPromoOnly((current) => !current)} className={`rounded-full border px-4 py-2 text-sm font-medium transition ${promoOnly ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-border bg-paper-2 text-ink hover:border-ink/20'}`}>
-                                            Goleada de Ofertas
-                                        </button>
-                                    </FilterSection>
-
+                                <div className="space-y-5 px-4 py-4">
                                     <FilterSection title="Preço total">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="rounded-2xl border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-xs text-muted">Mínimo</span>
-                                                <input type="number" min={minAvailablePrice} max={maxAvailablePrice} value={priceMin} onChange={(event) => setPriceMin(event.target.value)} className="mt-1 w-full bg-transparent text-base font-semibold text-ink outline-none" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <label className="rounded-md border border-border bg-paper-2 px-3 py-2">
+                                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+                                                    Mínimo
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    min={minAvailablePrice}
+                                                    max={maxAvailablePrice}
+                                                    value={priceMin}
+                                                    onChange={(event) => setPriceMin(event.target.value)}
+                                                    className="mt-0.5 w-full bg-transparent font-mono text-sm font-semibold text-ink outline-none"
+                                                />
                                             </label>
-                                            <label className="rounded-2xl border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-xs text-muted">Máximo</span>
-                                                <input type="number" min={minAvailablePrice} max={maxAvailablePrice} value={priceMax} onChange={(event) => setPriceMax(event.target.value)} className="mt-1 w-full bg-transparent text-base font-semibold text-ink outline-none" />
+                                            <label className="rounded-md border border-border bg-paper-2 px-3 py-2">
+                                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+                                                    Máximo
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    min={minAvailablePrice}
+                                                    max={maxAvailablePrice}
+                                                    value={priceMax}
+                                                    onChange={(event) => setPriceMax(event.target.value)}
+                                                    className="mt-0.5 w-full bg-transparent font-mono text-sm font-semibold text-ink outline-none"
+                                                />
                                             </label>
                                         </div>
-                                        <p className="mt-3 text-xs text-muted">{formatEuro(minAvailablePrice)} até {formatEuro(maxAvailablePrice)}</p>
-                                    </FilterSection>
-
-                                    <FilterSection title="Levantamento">
-                                        <div className="space-y-2">
-                                            {pickupModeOptions.map((option) => (
-                                                <SidebarCheckbox key={option.label} label={option.label} meta={option.count} checked={selectedPickupModes.includes(option.label)} onChange={() => toggleFilterValue(setSelectedPickupModes, option.label)} />
-                                            ))}
-                                        </div>
-                                    </FilterSection>
-
-                                    <FilterSection title="Características">
-                                        <div className="flex flex-wrap gap-2">
-                                            {featureOptions.map((option) => (
-                                                <PillButton key={option.label} active={selectedFeatures.includes(option.label)} onClick={() => toggleFilterValue(setSelectedFeatures, option.label)}>
-                                                    {option.label}
-                                                </PillButton>
-                                            ))}
-                                        </div>
+                                        <p className="mt-2 text-xs text-muted">
+                                            {formatEuro(minAvailablePrice)} a {formatEuro(maxAvailablePrice)}
+                                        </p>
                                     </FilterSection>
 
                                     <FilterSection title="Categorias">
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {categoryOptions.map((option) => (
-                                                <SidebarCheckbox key={option.label} label={option.label} meta={formatEuro(option.minPrice)} checked={selectedCategories.includes(option.label)} onChange={() => toggleFilterValue(setSelectedCategories, option.label)} />
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={formatEuro(option.minPrice)}
+                                                    checked={selectedCategories.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedCategories, option.label)}
+                                                />
                                             ))}
                                         </div>
                                     </FilterSection>
 
                                     <FilterSection title="Locadora">
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {supplierOptions.map((option) => (
-                                                <SidebarCheckbox key={option.label} label={option.label} meta={formatEuro(option.minPrice)} checked={selectedSuppliers.includes(option.label)} onChange={() => toggleFilterValue(setSelectedSuppliers, option.label)} />
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={formatEuro(option.minPrice)}
+                                                    checked={selectedSuppliers.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedSuppliers, option.label)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+
+                                    <FilterSection title="Características">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {featureOptions.map((option) => (
+                                                <PillButton
+                                                    key={option.label}
+                                                    active={selectedFeatures.includes(option.label)}
+                                                    onClick={() => toggleValue(setSelectedFeatures, option.label)}
+                                                >
+                                                    {option.label}
+                                                </PillButton>
                                             ))}
                                         </div>
                                     </FilterSection>
 
                                     <FilterSection title="Avaliações">
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5">
                                             {ratingOptions.map((option) => (
-                                                <PillButton key={option.label} active={selectedRatings.includes(option.label)} onClick={() => toggleFilterValue(setSelectedRatings, option.label)}>
+                                                <PillButton
+                                                    key={option.label}
+                                                    active={selectedRatings.includes(option.label)}
+                                                    onClick={() => toggleValue(setSelectedRatings, option.label)}
+                                                >
                                                     {option.label}
                                                 </PillButton>
-                                            ))}
-                                        </div>
-                                    </FilterSection>
-
-                                    <FilterSection title="Proteções">
-                                        <div className="flex flex-wrap gap-2">
-                                            {protectionOptions.map((option) => (
-                                                <PillButton key={option.label} active={selectedProtections.includes(option.label)} onClick={() => toggleFilterValue(setSelectedProtections, option.label)}>
-                                                    {option.label}
-                                                </PillButton>
-                                            ))}
-                                        </div>
-                                    </FilterSection>
-
-                                    <FilterSection title="Incluído no Preço">
-                                        <div className="flex flex-wrap gap-2">
-                                            {includedOptions.map((option) => (
-                                                <PillButton key={option.label} active={selectedIncluded.includes(option.label)} onClick={() => toggleFilterValue(setSelectedIncluded, option.label)}>
-                                                    {option.label}
-                                                </PillButton>
-                                            ))}
-                                        </div>
-                                    </FilterSection>
-
-                                    <FilterSection title="Quilometragem">
-                                        <div className="space-y-2">
-                                            {mileageOptions.map((option) => (
-                                                <SidebarCheckbox key={option.label} label={option.label} meta={option.count} checked={selectedMileage.includes(option.label)} onChange={() => toggleFilterValue(setSelectedMileage, option.label)} />
                                             ))}
                                         </div>
                                     </FilterSection>
 
                                     <FilterSection title="Pagamento">
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {paymentOptions.map((option) => (
-                                                <SidebarCheckbox key={option.label} label={option.label} meta={option.count} checked={selectedPayments.includes(option.label)} onChange={() => toggleFilterValue(setSelectedPayments, option.label)} />
+                                                <SidebarCheckbox
+                                                    key={option.label}
+                                                    label={option.label}
+                                                    meta={option.count}
+                                                    checked={selectedPayments.includes(option.label)}
+                                                    onChange={() => toggleValue(setSelectedPayments, option.label)}
+                                                />
                                             ))}
                                         </div>
                                     </FilterSection>
@@ -506,56 +474,74 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
                         </aside>
 
                         <div className="min-w-0">
-                            <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
-                                {categoryOptions.map((option) => (
-                                    <button key={option.label} type="button" onClick={() => toggleFilterValue(setSelectedCategories, option.label)} className={`min-w-[170px] rounded-[24px] border bg-paper px-4 py-4 text-left shadow-sm transition ${selectedCategories.includes(option.label) ? 'border-ink shadow-md' : 'border-border hover:border-ink/20'}`}>
-                                        <p className="text-lg font-bold text-ink">{option.label}</p>
-                                        <p className="mt-1 text-sm text-muted">A partir de {formatEuro(option.minPrice)}</p>
-                                        <p className="mt-2 text-xs text-muted">{option.count} opção(ões)</p>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                                 <div>
-                                    <div className="flex gap-1 rounded-full border border-border bg-paper p-1 text-xs shadow-sm">
-                                        <FilterChip active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>Todas</FilterChip>
-                                        <FilterChip active={statusFilter === 'available'} onClick={() => setStatusFilter('available')}>Disponíveis</FilterChip>
+                                    <div className="inline-flex gap-1 rounded-md border border-border bg-paper p-0.5 text-xs shadow-sm">
+                                        <FilterChip active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
+                                            Todas
+                                        </FilterChip>
+                                        <FilterChip
+                                            active={statusFilter === 'available'}
+                                            onClick={() => setStatusFilter('available')}
+                                        >
+                                            Operacionais
+                                        </FilterChip>
                                     </div>
-                                    <h2 className="mt-4 text-4xl font-bold tracking-tight text-ink">{filteredOffers.length} carro{filteredOffers.length === 1 ? '' : 's'} encontrados</h2>
+                                    <h2 className="mt-3 text-2xl font-bold tracking-tight text-ink">
+                                        {filteredOffers.length} viatura{filteredOffers.length === 1 ? '' : 's'} disponíve
+                                        {filteredOffers.length === 1 ? 'l' : 'is'}
+                                    </h2>
                                 </div>
 
-                                <label className="flex items-center gap-3 rounded-2xl border border-border bg-paper px-4 py-3 text-sm shadow-sm">
-                                    <span className="font-medium text-ink">Ordenar por</span>
-                                    <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="bg-transparent font-medium text-ink outline-none">
-                                        <option value="recommended">Mais procurados</option>
-                                        <option value="price_asc">Preço mais baixo</option>
-                                        <option value="price_desc">Preço mais alto</option>
-                                        <option value="rating">Melhor avaliação</option>
+                                <label className="flex items-center gap-2 rounded-md border border-border bg-paper px-3 py-2 text-sm shadow-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                                        Ordenar
+                                    </span>
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(event) => setSortOrder(event.target.value)}
+                                        className="bg-transparent text-sm font-medium text-ink outline-none"
+                                    >
+                                        {SORT_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </label>
                             </div>
 
                             {activeFilterTags.length > 0 && (
-                                <div className="mb-5 flex flex-wrap items-center gap-2">
-                                    <span className="text-sm font-medium text-muted">Filtros ativos:</span>
+                                <div className="mb-4 flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                                        Filtros ativos
+                                    </span>
                                     {activeFilterTags.map((tag) => (
-                                        <button key={`${tag.type}-${tag.value}`} type="button" onClick={() => removeActiveFilter(tag)} className="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-900">
-                                            {tag.value} ×
+                                        <button
+                                            key={`${tag.type}-${tag.value}`}
+                                            type="button"
+                                            onClick={() => removeActiveFilter(tag)}
+                                            className="rounded-sm border border-border bg-paper-3 px-2 py-1 text-xs font-medium text-ink hover:border-ink/40"
+                                        >
+                                            {tag.value} <span className="text-muted">×</span>
                                         </button>
                                     ))}
-                                    <button type="button" onClick={clearSearchFilters} className="ml-2 text-sm font-medium text-[#0f6bdf] hover:text-[#0a55b4]">
-                                        Limpar filtros
+                                    <button
+                                        type="button"
+                                        onClick={clearFilters}
+                                        className="ml-1 text-xs font-medium text-muted underline hover:text-ink"
+                                    >
+                                        Limpar
                                     </button>
                                 </div>
                             )}
 
                             {filteredOffers.length === 0 ? (
-                                <div className="rounded-3xl border border-border bg-paper px-5 py-14 text-center text-sm text-muted shadow-sm">
-                                    Sem carros com estes critérios.
+                                <div className="rounded-md border border-border bg-paper px-5 py-12 text-center text-sm text-muted shadow-sm">
+                                    Nenhuma viatura corresponde aos critérios selecionados.
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {filteredOffers.map((offer) => (
                                         <SearchOfferCard key={offer.id} offer={offer} onReserve={onGoToLogin} />
                                     ))}
@@ -569,10 +555,31 @@ export default function SearchResultsPage({ search, onBack, onGoToLogin }) {
     );
 }
 
+function groupByLabel(offers, getLabel, trackMinPrice) {
+    const groups = new Map();
+    offers.forEach((offer) => {
+        const label = getLabel(offer);
+        const current = groups.get(label) || { label, count: 0, minPrice: offer.price };
+        current.count += 1;
+        if (trackMinPrice) current.minPrice = Math.min(current.minPrice, offer.price);
+        groups.set(label, current);
+    });
+    const list = [...groups.values()];
+    return trackMinPrice ? list.sort((a, b) => a.minPrice - b.minPrice) : list;
+}
+
+function groupByList(offers, getList) {
+    const groups = new Map();
+    offers.forEach((offer) => {
+        getList(offer).forEach((item) => groups.set(item, (groups.get(item) || 0) + 1));
+    });
+    return [...groups.entries()].map(([label, count]) => ({ label, count }));
+}
+
 function FilterSection({ title, children }) {
     return (
-        <section className="border-t border-border-soft pt-5 first:border-t-0 first:pt-0">
-            <h4 className="mb-4 text-xl font-semibold tracking-tight text-ink">{title}</h4>
+        <section className="border-t border-border-soft pt-4 first:border-t-0 first:pt-0">
+            <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h4>
             {children}
         </section>
     );
@@ -580,9 +587,14 @@ function FilterSection({ title, children }) {
 
 function SidebarCheckbox({ label, meta, checked, onChange }) {
     return (
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-1 py-1 text-sm text-ink">
-            <span className="flex items-center gap-3">
-                <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 rounded border-border text-ink focus:ring-ink/20" />
+        <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-ink">
+            <span className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={onChange}
+                    className="h-4 w-4 rounded-sm border-border text-ink focus:ring-ink/20"
+                />
                 <span>{label}</span>
             </span>
             <span className="text-xs text-muted">{meta}</span>
@@ -592,7 +604,13 @@ function SidebarCheckbox({ label, meta, checked, onChange }) {
 
 function FilterChip({ active, onClick, children }) {
     return (
-        <button type="button" onClick={onClick} className={`rounded-full px-3 py-2 font-medium transition ${active ? 'bg-ink text-white' : 'text-muted hover:bg-paper-2 hover:text-ink'}`}>
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-sm px-2.5 py-1 font-medium transition ${
+                active ? 'bg-ink text-paper' : 'text-muted hover:bg-paper-2 hover:text-ink'
+            }`}
+        >
             {children}
         </button>
     );
@@ -600,97 +618,108 @@ function FilterChip({ active, onClick, children }) {
 
 function PillButton({ active, onClick, children }) {
     return (
-        <button type="button" onClick={onClick} className={`rounded-full border px-3 py-2 text-sm transition ${active ? 'border-sky-500 bg-sky-50 text-sky-900' : 'border-border bg-paper-2 text-ink hover:border-ink/20'}`}>
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-sm border px-2.5 py-1 text-xs transition ${
+                active ? 'border-ink bg-ink text-paper' : 'border-border bg-paper-2 text-ink hover:border-ink/40'
+            }`}
+        >
             {children}
         </button>
     );
 }
 
 function SearchOfferCard({ offer, onReserve }) {
+    const isInoperational = offer.vehicle.availability === 'inoperational';
+
     return (
-        <article className="overflow-hidden rounded-[28px] border border-border bg-paper shadow-sm transition hover:border-ink/20 hover:shadow-md">
-            <div className="grid gap-0 lg:grid-cols-[220px_minmax(0,1fr)_210px]">
-                <div className="border-b border-border-soft bg-paper-2 lg:border-b-0 lg:border-r">
-                    <div className="aspect-[5/4] overflow-hidden">
-                        <VehicleMedia vehicle={offer.vehicle} imageClassName="h-full w-full object-cover" className="h-full w-full" />
+        <article className="overflow-hidden rounded-md border border-border bg-paper shadow-sm transition hover:border-ink/30">
+            <div className="grid gap-0 md:grid-cols-[200px_minmax(0,1fr)_220px]">
+                <div className="border-b border-border-soft md:border-b-0 md:border-r">
+                    <div className="aspect-[16/10] overflow-hidden bg-paper-2">
+                        <VehicleMedia
+                            vehicle={offer.vehicle}
+                            imageClassName="h-full w-full object-cover"
+                            className="h-full w-full"
+                        />
                     </div>
-                    <div className="flex items-center justify-between px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between px-3 py-2 text-xs">
                         <span className="font-medium text-ink">{offer.supplier}</span>
-                        <span className="rounded-full bg-sky-600 px-2 py-1 text-xs font-semibold text-white">{offer.rating}</span>
+                        <span className="rounded-sm border border-border bg-paper-2 px-1.5 py-0.5 font-mono font-semibold text-ink">
+                            {offer.rating}
+                        </span>
                     </div>
                 </div>
 
-                <div className="p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h3 className="text-2xl font-bold tracking-tight text-ink">{offer.title}</h3>
-                            <p className="mt-1 text-sm text-muted">{offer.subtitle}</p>
+                <div className="p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                            <h3 className="text-lg font-bold tracking-tight text-ink">{offer.title}</h3>
+                            <p className="mt-0.5 text-xs text-muted">{offer.subtitle}</p>
                         </div>
-                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                            Cashback de {formatEuro(offer.cashback)}
+                        <span
+                            className={`rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                                isInoperational
+                                    ? 'border-danger/30 bg-danger-soft text-danger'
+                                    : 'border-positive/30 bg-positive-soft text-positive'
+                            }`}
+                        >
+                            {isInoperational ? 'Inoperacional' : 'Operacional'}
                         </span>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                        <SpecPill>{offer.vehicle.seats} lugares</SpecPill>
-                        <SpecPill>{offer.luggage} bagagens</SpecPill>
-                        <SpecPill>{offer.transmission}</SpecPill>
-                        <SpecPill>{offer.mileageLabel}</SpecPill>
-                    </div>
+                    <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink">
+                        <SpecItem>{offer.vehicle.seats} lugares</SpecItem>
+                        <SpecItem>{offer.luggage} bagagens</SpecItem>
+                        <SpecItem>{offer.transmission}</SpecItem>
+                        <SpecItem>{offer.fuelLabel}</SpecItem>
+                        <SpecItem>Km ilimitada</SpecItem>
+                    </ul>
 
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_220px]">
-                        <div>
-                            <div className="space-y-2 text-sm text-ink">
-                                {offer.protections.map((item) => (
-                                    <p key={item}>✓ {item}</p>
-                                ))}
-                            </div>
+                    <ul className="mt-3 space-y-1 text-xs text-muted">
+                        {offer.protections.map((item) => (
+                            <li key={item}>— {item}</li>
+                        ))}
+                    </ul>
 
-                            <div className="mt-5 rounded-2xl bg-paper-2 px-4 py-3 text-sm">
-                                <p className="font-medium text-ink">{offer.pickupLabel}</p>
-                                <p className="mt-1 text-muted">{offer.pickupMode}</p>
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-border-soft bg-paper-2/60 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted">A sua reserva</p>
-                            <p className="mt-3 text-3xl font-bold tracking-tight text-ink">{formatEuro(offer.price)}</p>
-                            <p className="mt-1 text-sm text-positive">Cancelamento grátis</p>
-
-                            <div className="mt-4 space-y-1 text-sm text-muted">
-                                <p>{offer.fuelLabel}</p>
-                                <p>{offer.payment}</p>
-                                {offer.included.map((item) => (
-                                    <p key={item}>{item}</p>
-                                ))}
-                            </div>
-
-                            <button type="button" onClick={onReserve} disabled={offer.vehicle.availability === 'inoperational'} className="mt-5 w-full rounded-2xl bg-[#17894e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#117241] disabled:cursor-not-allowed disabled:bg-slate-300">
-                                Continuar
-                            </button>
-                        </div>
+                    <div className="mt-3 flex items-center gap-2 border-t border-border-soft pt-3 text-xs text-muted">
+                        <span className="font-medium text-ink">{offer.pickupLabel}</span>
+                        <span>·</span>
+                        <span>{offer.pickupMode}</span>
                     </div>
                 </div>
 
-                <div className="hidden border-l border-border-soft bg-paper xl:block">
-                    <div className="flex h-full flex-col justify-between p-5">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Categoria</p>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-ink">{offer.categoryLabel}</p>
-                            <p className="mt-1 text-sm text-muted">Desde {formatEuro(offer.price)}/dia</p>
-                        </div>
+                <div className="flex flex-col justify-between border-t border-border-soft p-4 md:border-l md:border-t-0">
+                    <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">A sua reserva</p>
+                        <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-ink">
+                            {formatEuro(offer.price)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-positive">Cancelamento grátis</p>
 
-                        <div className="space-y-2 text-sm text-muted">
-                            <p>{offer.pickupLabel}</p>
-                            <p>{offer.dropoffLabel}</p>
+                        <div className="mt-3 space-y-0.5 text-xs text-muted">
+                            <p>{offer.payment}</p>
+                            {offer.included.map((item) => (
+                                <p key={item}>{item}</p>
+                            ))}
                         </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={onReserve}
+                        disabled={isInoperational}
+                        className="mt-4 w-full rounded-md bg-ink px-3 py-2 text-sm font-semibold text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:bg-muted-soft"
+                    >
+                        Continuar
+                    </button>
                 </div>
             </div>
         </article>
     );
 }
 
-function SpecPill({ children }) {
-    return <span className="rounded-xl bg-paper-2 px-3 py-2 text-sm font-medium text-ink">{children}</span>;
+function SpecItem({ children }) {
+    return <li className="font-medium">{children}</li>;
 }
