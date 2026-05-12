@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -58,8 +59,52 @@ class ReservationController extends Controller
     public function approve(Request $request, Reservation $reservation): JsonResponse
     {
         $this->ensureManager($request);
-        $reservation->update(['status' => Reservation::STATUS_APPROVED]);
+
+        if ($reservation->status !== Reservation::STATUS_PENDING) {
+            throw new AccessDeniedHttpException('Apenas pedidos pendentes podem ser aprovados.');
+        }
+
+        $hasConflict = Reservation::where('vehicle_id', $reservation->vehicle_id)
+            ->whereDate('date', $reservation->date)
+            ->where('id', '!=', $reservation->id)
+            ->whereIn('status', [
+                Reservation::STATUS_APPROVED,
+                Reservation::STATUS_CHECKED_IN,
+            ])
+            ->exists();
+
+        if ($hasConflict) {
+            return response()->json([
+                'message' => 'Esta viatura já foi atribuída para essa data.',
+            ], 409);
+        }
+
+        $rejectedIds = [];
+
+        DB::transaction(function () use ($reservation, &$rejectedIds) {
+            $reservation->update(['status' => Reservation::STATUS_APPROVED]);
+
+            $competingReservations = Reservation::where('vehicle_id', $reservation->vehicle_id)
+                ->whereDate('date', $reservation->date)
+                ->where('id', '!=', $reservation->id)
+                ->where('status', Reservation::STATUS_PENDING)
+                ->get();
+
+            foreach ($competingReservations as $competingReservation) {
+                $competingReservation->update(['status' => Reservation::STATUS_REJECTED]);
+                $rejectedIds[] = $competingReservation->id;
+            }
+        });
+
         $this->notifications->reservationApproved($reservation);
+
+        if (! empty($rejectedIds)) {
+            Reservation::whereIn('id', $rejectedIds)
+                ->with(['vehicle', 'requester'])
+                ->get()
+                ->each(fn (Reservation $item) => $this->notifications->reservationRejected($item));
+        }
+
         return response()->json($this->fresh($reservation));
     }
 

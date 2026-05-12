@@ -34,7 +34,6 @@ class VehicleController extends Controller
     {
         return Reservation::whereIn('vehicle_id', $vehicleIds)
             ->whereIn('status', [
-                Reservation::STATUS_PENDING,
                 Reservation::STATUS_APPROVED,
                 Reservation::STATUS_CHECKED_IN,
             ])
@@ -48,9 +47,7 @@ class VehicleController extends Controller
     {
         $inUse = $activeReservations->firstWhere('status', Reservation::STATUS_CHECKED_IN);
         $approved = $activeReservations->firstWhere('status', Reservation::STATUS_APPROVED);
-        $pending = $activeReservations->firstWhere('status', Reservation::STATUS_PENDING);
-
-        $active = $inUse ?? $approved ?? $pending;
+        $active = $inUse ?? $approved;
 
         if (! $vehicle->operational) {
             $availability = 'inoperational';
@@ -58,8 +55,6 @@ class VehicleController extends Controller
             $availability = 'in_use';
         } elseif ($approved) {
             $availability = 'reserved';
-        } elseif ($pending) {
-            $availability = 'pre_reserved';
         } else {
             $availability = 'available';
         }
