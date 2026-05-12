@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import {
     DashboardIcon,
     CarIcon,
@@ -8,6 +9,7 @@ import {
     WrenchIcon,
     UsersIcon,
     LogoutIcon,
+    BellIcon,
 } from './Icons';
 
 export default function DashboardLayout({ currentView, onNavigate, children }) {
@@ -118,6 +120,8 @@ export default function DashboardLayout({ currentView, onNavigate, children }) {
                             </button>
                         </div>
 
+                        <NotificationsBell />
+
                         <button
                             onClick={logout}
                             title={t.auth.logout}
@@ -133,6 +137,88 @@ export default function DashboardLayout({ currentView, onNavigate, children }) {
                     <div className="mx-auto max-w-6xl">{children}</div>
                 </main>
             </div>
+        </div>
+    );
+}
+
+function NotificationsBell() {
+    const { t } = useI18n();
+    const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
+        useData();
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        function onClickOutside(event) {
+            if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+        }
+
+        document.addEventListener('mousedown', onClickOutside);
+        return () => document.removeEventListener('mousedown', onClickOutside);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={() => setOpen((s) => !s)}
+                title={t.notifications?.title || 'Notificações'}
+                className="relative flex items-center text-muted transition hover:text-ink"
+            >
+                <BellIcon className="h-[18px] w-[18px]" />
+                {unreadCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full z-30 mt-3 w-[340px] overflow-hidden rounded-md border border-border bg-paper shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+                    <div className="flex items-center justify-between border-b border-border-soft px-4 py-3">
+                        <p className="text-sm font-semibold text-ink">
+                            {t.notifications?.title || 'Notificações'}
+                        </p>
+                        {notifications.length > 0 && (
+                            <button
+                                onClick={markAllNotificationsRead}
+                                className="text-xs text-muted hover:text-ink"
+                            >
+                                {t.notifications?.markAllRead || 'Marcar todas como lidas'}
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="max-h-[420px] overflow-y-auto">
+                        {notifications.length === 0 ? (
+                            <p className="px-4 py-6 text-center text-xs text-muted">
+                                {t.notifications?.empty || 'Sem notificações.'}
+                            </p>
+                        ) : (
+                            <ul>
+                                {notifications.map((n) => (
+                                    <li key={n.id}>
+                                        <button
+                                            onClick={() => markNotificationRead(n.id)}
+                                            className={`flex w-full items-start gap-3 border-b border-border-soft px-4 py-3 text-left text-xs transition hover:bg-paper-2/60 ${
+                                                n.read ? 'text-muted' : 'text-ink'
+                                            }`}
+                                        >
+                                            <span
+                                                className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                                                    n.read ? 'bg-border' : 'bg-danger'
+                                                }`}
+                                            />
+                                            <span className="flex-1 leading-relaxed">
+                                                {n.message}
+                                            </span>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

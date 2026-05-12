@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import fordTransitImg from '../../img/carros/ford-transit.webp';
 import vwTransporterImg from '../../img/carros/vw-transporter.webp';
 import mitsubishiL400Img from '../../img/carros/mitsubishi-l400.webp';
@@ -193,6 +193,8 @@ const INITIAL_RESERVATIONS = [
         endKm: null,
         startNotes: '',
         endNotes: '',
+        startMedia: [],
+        endMedia: [],
     },
     {
         id: 2,
@@ -208,6 +210,8 @@ const INITIAL_RESERVATIONS = [
         endKm: null,
         startNotes: '',
         endNotes: '',
+        startMedia: [],
+        endMedia: [],
     },
     {
         id: 3,
@@ -223,8 +227,48 @@ const INITIAL_RESERVATIONS = [
         endKm: null,
         startNotes: 'Sem danos visíveis. Depósito cheio.',
         endNotes: '',
+        startMedia: [],
+        endMedia: [],
     },
 ];
+
+export const NOTIFICATION_TYPES = {
+    RESERVATION_REQUESTED: 'reservation_requested',
+    RESERVATION_CHECKED_OUT: 'reservation_checked_out',
+    VEHICLE_NON_OPERATIONAL: 'vehicle_non_operational',
+    INSPECTION_DUE: 'inspection_due',
+    INSURANCE_DUE: 'insurance_due',
+};
+
+function daysBetween(dateStr) {
+    if (!dateStr) return null;
+    const target = new Date(dateStr);
+    if (Number.isNaN(target.getTime())) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+}
+
+const MEDIA_TTL_DAYS = 30;
+
+function purgeOldMedia(reservations) {
+    const cutoff = Date.now() - MEDIA_TTL_DAYS * 86400000;
+    let changed = false;
+    const next = reservations.map((r) => {
+        if (r.status !== RES_STATUS.CHECKED_OUT) return r;
+        const filterRecent = (list) =>
+            (list || []).filter((media) => (media.createdAt || 0) >= cutoff);
+        const startMedia = filterRecent(r.startMedia);
+        const endMedia = filterRecent(r.endMedia);
+        if (startMedia.length !== (r.startMedia || []).length || endMedia.length !== (r.endMedia || []).length) {
+            changed = true;
+            return { ...r, startMedia, endMedia };
+        }
+        return r;
+    });
+    return changed ? next : reservations;
+}
 
 export { RES_STATUS };
 
@@ -232,16 +276,71 @@ export function DataProvider({ children }) {
     const [vehicles, setVehicles] = useState(INITIAL_VEHICLES);
     const [maintenance, setMaintenance] = useState(INITIAL_MAINTENANCE);
     const [reservations, setReservations] = useState(INITIAL_RESERVATIONS);
+    const [events, setEvents] = useState([]);
+    const [readNotificationIds, setReadNotificationIds] = useState(new Set());
 
-    const addReservation = (res) => {
-        setReservations((prev) => [
+    useEffect(() => {
+        setReservations((prev) => purgeOldMedia(prev));
+        const interval = window.setInterval(() => {
+            setReservations((prev) => purgeOldMedia(prev));
+        }, 60 * 60 * 1000);
+        return () => window.clearInterval(interval);
+    }, []);
+
+    const pushEvent = (event) => {
+        setEvents((prev) => [
             ...prev,
-            { ...res, id: prev.length ? Math.max(...prev.map((r) => r.id)) + 1 : 1 },
+            {
+                id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                createdAt: Date.now(),
+                ...event,
+            },
         ]);
     };
 
+    const addReservation = (res) => {
+        const id = reservations.length ? Math.max(...reservations.map((r) => r.id)) + 1 : 1;
+        const created = {
+            ...res,
+            id,
+            startMedia: res.startMedia || [],
+            endMedia: res.endMedia || [],
+        };
+        setReservations((prev) => [...prev, created]);
+        const vehicle = vehicles.find((v) => v.id === created.vehicleId);
+        pushEvent({
+            type: NOTIFICATION_TYPES.RESERVATION_REQUESTED,
+            reservationId: id,
+            vehicleId: created.vehicleId,
+            message: `${created.requestedByName} pediu reserva da viatura ${vehicle?.name || ''} (${created.trip})`,
+        });
+    };
+
     const updateReservation = (id, patch) => {
-        setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+        let beforeStatus = null;
+        let after = null;
+        setReservations((prev) =>
+            prev.map((r) => {
+                if (r.id !== id) return r;
+                beforeStatus = r.status;
+                after = { ...r, ...patch };
+                return after;
+            })
+        );
+
+        if (
+            after &&
+            beforeStatus !== RES_STATUS.CHECKED_OUT &&
+            patch.status === RES_STATUS.CHECKED_OUT
+        ) {
+            const vehicle = vehicles.find((v) => v.id === after.vehicleId);
+            pushEvent({
+                type: NOTIFICATION_TYPES.RESERVATION_CHECKED_OUT,
+                reservationId: id,
+                vehicleId: after.vehicleId,
+                message: `Reserva fechada: ${vehicle?.name || ''} — ${after.endKm?.toLocaleString('pt-PT') || '?'} km`,
+            });
+        }
     };
 
     const addMaintenance = (m) => {
@@ -255,6 +354,15 @@ export function DataProvider({ children }) {
         setVehicles((prev) =>
             prev.map((v) => (v.id === vehicleId ? { ...v, operational } : v))
         );
+
+        if (!operational) {
+            const vehicle = vehicles.find((v) => v.id === vehicleId);
+            pushEvent({
+                type: NOTIFICATION_TYPES.VEHICLE_NON_OPERATIONAL,
+                vehicleId,
+                message: `Viatura ${vehicle?.name || ''} (${vehicle?.plate || ''}) marcada como não operacional`,
+            });
+        }
     };
 
     const updateVehicleKm = (vehicleId, km) => {
@@ -266,6 +374,67 @@ export function DataProvider({ children }) {
     const getVehicle = (id) => vehicles.find((v) => v.id === id);
     const getMaintenanceFor = (vehicleId) =>
         maintenance.filter((m) => m.vehicleId === vehicleId);
+
+    const notifications = useMemo(() => {
+        const derived = [];
+
+        vehicles.forEach((v) => {
+            const inspDays = daysBetween(v.nextInspection);
+            if (inspDays !== null && inspDays <= 30) {
+                derived.push({
+                    id: `insp-${v.id}-${v.nextInspection}`,
+                    type: NOTIFICATION_TYPES.INSPECTION_DUE,
+                    vehicleId: v.id,
+                    createdAt: Date.now(),
+                    days: inspDays,
+                    message:
+                        inspDays < 0
+                            ? `Inspeção vencida: ${v.name} (${v.plate})`
+                            : inspDays === 0
+                            ? `Inspeção hoje: ${v.name} (${v.plate})`
+                            : `Inspeção em ${inspDays} dia${inspDays === 1 ? '' : 's'}: ${v.name} (${v.plate})`,
+                });
+            }
+
+            const insDays = daysBetween(v.insuranceRenewal);
+            if (insDays !== null && insDays <= 30) {
+                derived.push({
+                    id: `ins-${v.id}-${v.insuranceRenewal}`,
+                    type: NOTIFICATION_TYPES.INSURANCE_DUE,
+                    vehicleId: v.id,
+                    createdAt: Date.now(),
+                    days: insDays,
+                    message:
+                        insDays < 0
+                            ? `Renovação de seguro vencida: ${v.name} (${v.plate})`
+                            : insDays === 0
+                            ? `Seguro renova hoje: ${v.name} (${v.plate})`
+                            : `Renovação de seguro em ${insDays} dia${insDays === 1 ? '' : 's'}: ${v.name} (${v.plate})`,
+                });
+            }
+        });
+
+        const all = [...events, ...derived].map((n) => ({
+            ...n,
+            read: readNotificationIds.has(n.id),
+        }));
+
+        return all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }, [vehicles, events, readNotificationIds]);
+
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    const markNotificationRead = (id) => {
+        setReadNotificationIds((prev) => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+    };
+
+    const markAllNotificationsRead = () => {
+        setReadNotificationIds(new Set(notifications.map((n) => n.id)));
+    };
 
     return (
         <DataContext.Provider
@@ -280,6 +449,10 @@ export function DataProvider({ children }) {
                 updateVehicleKm,
                 getVehicle,
                 getMaintenanceFor,
+                notifications,
+                unreadCount,
+                markNotificationRead,
+                markAllNotificationsRead,
             }}
         >
             {children}

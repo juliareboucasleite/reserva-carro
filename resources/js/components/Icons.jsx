@@ -68,6 +68,32 @@ export function LogoutIcon({ className = base }) {
     );
 }
 
+export function BellIcon({ className = base }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" {...stroke}>
+            <path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7Z" />
+            <path d="M10 19a2 2 0 0 0 4 0" />
+        </svg>
+    );
+}
+
+export function CameraIcon({ className = base }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" {...stroke}>
+            <path d="M4 8h3l2-2h6l2 2h3v11H4z" />
+            <circle cx="12" cy="13" r="3.5" />
+        </svg>
+    );
+}
+
+export function TrashIcon({ className = base }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" {...stroke}>
+            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+        </svg>
+    );
+}
+
 export function AlertIcon({ className = base }) {
     return (
         <svg className={className} viewBox="0 0 24 24" {...stroke}>
