@@ -29,11 +29,13 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
     const {
         reservations,
         vehicles,
-        updateReservation,
         addReservation,
+        approveReservation,
+        rejectReservation,
+        checkInReservation,
+        checkOutReservation,
+        confirmReservationOperational,
         addMaintenance,
-        setVehicleOperational,
-        updateVehicleKm,
     } = useData();
 
     const [filter, setFilter] = useState('all');
@@ -152,16 +154,8 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                                                 reservation={r}
                                                 isManager={isManager}
                                                 isOwner={r.requestedBy === user.id}
-                                                onApprove={() =>
-                                                    updateReservation(r.id, {
-                                                        status: RES_STATUS.APPROVED,
-                                                    })
-                                                }
-                                                onReject={() =>
-                                                    updateReservation(r.id, {
-                                                        status: RES_STATUS.REJECTED,
-                                                    })
-                                                }
+                                                onApprove={() => approveReservation(r.id)}
+                                                onReject={() => rejectReservation(r.id)}
                                                 onCheckIn={() => setCheckInId(r.id)}
                                                 onCheckOut={() => setCheckOutId(r.id)}
                                                 onConfirmOp={() => setConfirmOpId(r.id)}
@@ -179,19 +173,8 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 open={newOpen}
                 onClose={handleNewClose}
                 preselectVehicle={preselectVehicle}
-                onCreate={(payload) => {
-                    addReservation({
-                        ...payload,
-                        requestedBy: user.id,
-                        requestedByName: user.name,
-                        team: user.team,
-                        status: RES_STATUS.PENDING,
-                        driver: null,
-                        startKm: null,
-                        endKm: null,
-                        startNotes: '',
-                        endNotes: '',
-                    });
+                onCreate={async (payload) => {
+                    await addReservation(payload);
                     handleNewClose();
                 }}
             />
@@ -203,13 +186,12 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkInId)?.vehicleId
                 )}
-                onConfirm={({ driver, startKm, startNotes, startMedia }) => {
-                    updateReservation(checkInId, {
+                onConfirm={async ({ driver, startKm, startNotes, startMedia }) => {
+                    await checkInReservation(checkInId, {
                         driver,
                         startKm,
                         startNotes,
-                        startMedia: startMedia || [],
-                        status: RES_STATUS.CHECKED_IN,
+                        files: (startMedia || []).map((m) => m.file).filter(Boolean),
                     });
                     setCheckInId(null);
                 }}
@@ -223,15 +205,12 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                 vehicle={vehicles.find(
                     (v) => v.id === reservations.find((r) => r.id === checkOutId)?.vehicleId
                 )}
-                onConfirm={({ endKm, endNotes, endMedia }) => {
-                    const r = reservations.find((x) => x.id === checkOutId);
-                    updateReservation(checkOutId, {
+                onConfirm={async ({ endKm, endNotes, endMedia }) => {
+                    await checkOutReservation(checkOutId, {
                         endKm,
                         endNotes,
-                        endMedia: endMedia || [],
-                        status: RES_STATUS.CHECKED_OUT,
+                        files: (endMedia || []).map((m) => m.file).filter(Boolean),
                     });
-                    if (r) updateVehicleKm(r.vehicleId, endKm);
                     setCheckOutId(null);
                 }}
             />
@@ -248,11 +227,10 @@ export default function Reservations({ initialNewVehicleId, onClearInitial }) {
                         : null
                 }
                 onClose={() => setConfirmOpId(null)}
-                onConfirm={(operational) => {
+                onConfirm={async (operational) => {
                     const r = reservations.find((x) => x.id === confirmOpId);
-                    updateReservation(confirmOpId, { operationalConfirmed: operational });
+                    await confirmReservationOperational(confirmOpId, operational);
                     if (!operational && r) {
-                        setVehicleOperational(r.vehicleId, false);
                         setMaintenancePrefill({
                             vehicleId: r.vehicleId,
                             notes: r.endNotes || '',

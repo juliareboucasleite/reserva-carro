@@ -145,41 +145,32 @@ export function DueDate({ value }) {
     );
 }
 
-function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 export function MediaUpload({ value = [], onChange, disabled = false }) {
     const { t } = useI18n();
     const inputRef = useRef(null);
 
-    async function handleFiles(event) {
+    function handleFiles(event) {
         const files = Array.from(event.target.files || []);
         if (!files.length) return;
 
         const accepted = files.filter((file) => file.size <= MAX_FILE_BYTES);
-        const items = await Promise.all(
-            accepted.map(async (file) => ({
-                id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                name: file.name,
-                type: file.type,
-                dataUrl: await readFileAsDataUrl(file),
-                createdAt: Date.now(),
-            }))
-        );
+        const items = accepted.map((file) => ({
+            id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name,
+            type: file.type,
+            previewUrl: URL.createObjectURL(file),
+            file,
+        }));
 
         onChange([...(value || []), ...items]);
         if (inputRef.current) inputRef.current.value = '';
     }
 
     function removeItem(id) {
+        const target = (value || []).find((item) => item.id === id);
+        if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
         onChange((value || []).filter((item) => item.id !== id));
     }
 
@@ -219,14 +210,14 @@ export function MediaUpload({ value = [], onChange, disabled = false }) {
                             <div className="aspect-square">
                                 {item.type?.startsWith('video') ? (
                                     <video
-                                        src={item.dataUrl}
+                                        src={item.previewUrl || item.dataUrl}
                                         className="h-full w-full object-cover"
                                         muted
                                         playsInline
                                     />
                                 ) : (
                                     <img
-                                        src={item.dataUrl}
+                                        src={item.previewUrl || item.dataUrl}
                                         alt={item.name}
                                         className="h-full w-full object-cover"
                                     />
