@@ -386,7 +386,14 @@ export function MediaUpload({ value = [], onChange, disabled = false }) {
 
 const ANGLE_KEYS = ['front', 'back', 'right', 'left'];
 
-export function AngleUpload({ value = {}, onChange, disabled = false }) {
+export function AngleUpload({
+    value = {},
+    onChange,
+    disabled = false,
+    accept = 'image/*',
+    title,
+    hint,
+}) {
     const { t } = useI18n();
 
     function pickFile(angle, file) {
@@ -417,8 +424,8 @@ export function AngleUpload({ value = {}, onChange, disabled = false }) {
 
     return (
         <div>
-            <p className="text-xs font-medium text-ink">{t.media.angles.title}</p>
-            <p className="mt-1 text-[11px] text-muted">{t.media.angles.hint}</p>
+            <p className="text-xs font-medium text-ink">{title || t.media.angles.title}</p>
+            <p className="mt-1 text-[11px] text-muted">{hint || t.media.angles.hint}</p>
 
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {ANGLE_KEYS.map((angle) => {
@@ -431,6 +438,7 @@ export function AngleUpload({ value = {}, onChange, disabled = false }) {
                             removeLabel={t.media.remove}
                             entry={entry}
                             disabled={disabled}
+                            accept={accept}
                             onPick={(file) => pickFile(angle, file)}
                             onRemove={() => removeAngle(angle)}
                         />
@@ -441,7 +449,16 @@ export function AngleUpload({ value = {}, onChange, disabled = false }) {
     );
 }
 
-function AngleSlot({ label, replaceLabel, removeLabel, entry, disabled, onPick, onRemove }) {
+function AngleSlot({
+    label,
+    replaceLabel,
+    removeLabel,
+    entry,
+    disabled,
+    accept,
+    onPick,
+    onRemove,
+}) {
     const inputRef = useRef(null);
 
     return (
@@ -453,11 +470,20 @@ function AngleSlot({ label, replaceLabel, removeLabel, entry, disabled, onPick, 
             <div className="relative aspect-square overflow-hidden rounded-md border border-border-soft bg-paper-2">
                 {entry ? (
                     <>
-                        <img
-                            src={entry.previewUrl}
-                            alt={label}
-                            className="h-full w-full object-cover"
-                        />
+                        {entry.type?.startsWith('video') ? (
+                            <video
+                                src={entry.previewUrl}
+                                className="h-full w-full object-cover"
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={entry.previewUrl}
+                                alt={label}
+                                className="h-full w-full object-cover"
+                            />
+                        )}
                         {!disabled && (
                             <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
                                 <button
@@ -493,7 +519,7 @@ function AngleSlot({ label, replaceLabel, removeLabel, entry, disabled, onPick, 
             <input
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                accept={accept}
                 className="hidden"
                 onChange={(e) => onPick(e.target.files?.[0])}
                 disabled={disabled}
@@ -527,7 +553,7 @@ export function DamageCanvas({
         <div
             ref={containerRef}
             onClick={handleClick}
-            className={`relative mx-auto w-full max-w-[260px] overflow-hidden rounded-md border border-border-soft bg-paper-2 ${
+            className={`relative mx-auto w-full max-w-[520px] overflow-hidden rounded-md border border-border-soft bg-paper-2 ${
                 readOnly ? '' : 'cursor-crosshair'
             }`}
         >

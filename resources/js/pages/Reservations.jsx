@@ -678,6 +678,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
             onClose={onClose}
             kicker={`04 · ${vehicle.name} · ${vehicle.plate}`}
             title={t.reservations.checkOutTitle}
+            maxWidth="max-w-6xl"
         >
             <form onSubmit={submit} className="space-y-5">
                 <Field label={t.reservations.endKm}>

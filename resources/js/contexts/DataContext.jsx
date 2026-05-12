@@ -271,10 +271,19 @@ export function DataProvider({ children }) {
         fetchVehicles();
     };
 
-    const checkOutReservation = async (id, { endKm, endNotes, files, damages: reportedDamages = [] }) => {
+    const checkOutReservation = async (
+        id,
+        { endKm, endNotes, files, angleMedia, damages: reportedDamages = [] }
+    ) => {
         const fd = new FormData();
         fd.append('end_km', String(endKm));
         if (endNotes) fd.append('end_notes', endNotes);
+        ['front', 'back', 'left', 'right'].forEach((angle) => {
+            const entry = angleMedia?.[angle];
+            if (entry?.file) {
+                fd.append(`media[${angle}]`, entry.file);
+            }
+        });
         (files || []).forEach((file) => fd.append('media[]', file));
 
         const { data } = await axios.post(`/api/reservations/${id}/checkout`, fd, {

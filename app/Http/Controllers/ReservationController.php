@@ -114,7 +114,10 @@ class ReservationController extends Controller
             'end_km' => ['required', 'integer', 'min:0'],
             'end_notes' => ['nullable', 'string'],
             'media' => ['nullable', 'array'],
-            'media.*' => ['file', 'mimetypes:image/*,video/*', 'max:20480'],
+            'media.front' => ['required', 'file', 'mimetypes:image/*,video/*', 'max:20480'],
+            'media.back' => ['required', 'file', 'mimetypes:image/*,video/*', 'max:20480'],
+            'media.left' => ['required', 'file', 'mimetypes:image/*,video/*', 'max:20480'],
+            'media.right' => ['required', 'file', 'mimetypes:image/*,video/*', 'max:20480'],
         ]);
 
         $reservation->update([
@@ -125,7 +128,7 @@ class ReservationController extends Controller
 
         $reservation->vehicle()->update(['current_km' => $data['end_km']]);
 
-        $this->storeUploads($request, $reservation, 'end');
+        $this->storeAngledUploads($request, $reservation, 'end');
 
         $this->notifications->reservationCheckedOut($reservation);
 
