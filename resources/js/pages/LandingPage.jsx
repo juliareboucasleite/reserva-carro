@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { useData } from '../contexts/DataContext';
 import { CarIcon, GaugeIcon, PhoneIcon, PinIcon, SeatIcon } from '../components/Icons';
 import VehicleMedia from '../components/VehicleMedia';
-import heroBackground from '../../img/carros/suv-japones-em-uma-estrada-cenica-de-outono-nas-montanhas_470606-1277.png';
+import heroBackground from '../../img/carros/suv-japones-hero.webp';
 
 const LOCATION_OPTIONS = [
     'Lisboa',
