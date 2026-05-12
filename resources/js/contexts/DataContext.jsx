@@ -240,8 +240,9 @@ export function DataProvider({ children }) {
     };
 
     const approveReservation = async (id) => {
-        const { data } = await axios.post(`/api/reservations/${id}/approve`);
-        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        await axios.post(`/api/reservations/${id}/approve`);
+        const { data } = await axios.get('/api/reservations');
+        setReservations(data.map(mapReservation));
         fetchVehicles();
         fetchNotifications();
     };
