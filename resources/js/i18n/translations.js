@@ -200,6 +200,12 @@ export const translations = {
             doCheckIn_short: 'Check-in',
             doCheckOut_short: 'Checkout',
             empty: 'Sem reservas para mostrar.',
+            operationalManagerHint:
+                'O gestor de viaturas vai confirmar o estado operacional após receber a notificação do checkout.',
+            confirmOperational: 'Confirmar viatura',
+            confirmOperationalTitle: 'A viatura ficou operacional?',
+            confirmOperationalSubtitle:
+                'Se selecionar "Não", a viatura é marcada como inoperacional e abre-se uma ficha de manutenção.',
         },
         maintenance: {
             title: 'Manutenção',
@@ -443,6 +449,12 @@ export const translations = {
             doCheckIn_short: 'Check-in',
             doCheckOut_short: 'Checkout',
             empty: 'No reservations to show.',
+            operationalManagerHint:
+                'The fleet manager will confirm the operational status after the checkout notification.',
+            confirmOperational: 'Confirm vehicle',
+            confirmOperationalTitle: 'Did the vehicle remain operational?',
+            confirmOperationalSubtitle:
+                'If you choose "No", the vehicle is marked out of service and a maintenance record is opened.',
         },
         maintenance: {
             title: 'Maintenance',

@@ -254,6 +254,47 @@ export function MediaUpload({ value = [], onChange, disabled = false }) {
     );
 }
 
+export function MediaGallery({ items = [] }) {
+    const { t } = useI18n();
+
+    if (!items || items.length === 0) {
+        return <p className="text-[11px] text-muted">{t.media.empty}</p>;
+    }
+
+    return (
+        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+            {items.map((item) => (
+                <li
+                    key={item.id}
+                    className="overflow-hidden rounded-md border border-border-soft bg-paper-2"
+                >
+                    <a
+                        href={item.dataUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block aspect-square"
+                    >
+                        {item.type?.startsWith('video') ? (
+                            <video
+                                src={item.dataUrl}
+                                className="h-full w-full object-cover"
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={item.dataUrl}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                            />
+                        )}
+                    </a>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 export function Badge({ tone = 'neutral', children }) {
     return (
         <span

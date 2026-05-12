@@ -2,7 +2,7 @@ import React from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { PageHeader, Button, Badge, DueDate } from '../components/ui';
+import { PageHeader, Button, Badge, DueDate, MediaGallery } from '../components/ui';
 import VehicleMedia from '../components/VehicleMedia';
 
 export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
@@ -280,27 +280,55 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                     </p>
                 ) : (
                     <ul className="border-t border-border-soft">
-                        {vehicleReservations.map((r) => (
-                            <li
-                                key={r.id}
-                                className="flex items-center justify-between border-b border-border-soft py-4"
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-ink">{r.trip}</p>
-                                    <p className="mt-0.5 font-mono text-xs text-muted">
-                                        {r.date} · {r.requestedByName}
-                                    </p>
-                                </div>
-                                <Badge tone={r.status}>
-                                    {t.reservations[
-                                        'status' +
-                                            r.status
-                                                .replace(/_./g, (m) => m[1].toUpperCase())
-                                                .replace(/^./, (m) => m.toUpperCase())
-                                    ] || r.status}
-                                </Badge>
-                            </li>
-                        ))}
+                        {vehicleReservations.map((r) => {
+                            const hasMedia =
+                                (r.startMedia?.length || 0) + (r.endMedia?.length || 0) > 0;
+                            return (
+                                <li
+                                    key={r.id}
+                                    className="border-b border-border-soft py-4"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-ink">{r.trip}</p>
+                                            <p className="mt-0.5 font-mono text-xs text-muted">
+                                                {r.date} · {r.requestedByName}
+                                            </p>
+                                        </div>
+                                        <Badge tone={r.status}>
+                                            {t.reservations[
+                                                'status' +
+                                                    r.status
+                                                        .replace(/_./g, (m) =>
+                                                            m[1].toUpperCase()
+                                                        )
+                                                        .replace(/^./, (m) => m.toUpperCase())
+                                            ] || r.status}
+                                        </Badge>
+                                    </div>
+                                    {hasMedia && (
+                                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                                            {r.startMedia?.length > 0 && (
+                                                <div>
+                                                    <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                                                        {t.reservations.startMediaLabel}
+                                                    </p>
+                                                    <MediaGallery items={r.startMedia} />
+                                                </div>
+                                            )}
+                                            {r.endMedia?.length > 0 && (
+                                                <div>
+                                                    <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                                                        {t.reservations.endMediaLabel}
+                                                    </p>
+                                                    <MediaGallery items={r.endMedia} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
