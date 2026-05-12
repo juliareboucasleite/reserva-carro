@@ -215,6 +215,19 @@ export const translations = {
             totalCost: 'Custo total',
             empty: 'Sem registos.',
             createTitle: 'Registar manutenção',
+            autoFromCheckout: 'Aberta automaticamente a partir do checkout',
+        },
+        notifications: {
+            title: 'Notificações',
+            empty: 'Sem notificações.',
+            markAllRead: 'Marcar todas como lidas',
+        },
+        media: {
+            title: 'Fotos e vídeo',
+            add: 'Adicionar foto/vídeo',
+            hint: 'Imagens e vídeo até 20 MB. Apagados automaticamente 30 dias após o checkout.',
+            remove: 'Remover',
+            empty: 'Sem ficheiros.',
         },
         admin: {
             title: 'Administração',
