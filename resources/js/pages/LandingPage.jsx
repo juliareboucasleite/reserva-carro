@@ -588,7 +588,9 @@ function VehicleCard({ vehicle, onReserve }) {
 
                 {vehicle.activeReservation && vehicle.availability !== 'available' && vehicle.availability !== 'inoperational' && (
                     <p className="rounded-md bg-warn-soft px-2.5 py-1.5 text-[11px] text-warn">
-                        {vehicle.activeReservation.requesterName} · {vehicle.activeReservation.date}
+                        {[vehicle.activeReservation.requesterName, vehicle.activeReservation.date]
+                            .filter(Boolean)
+                            .join(' · ')}
                     </p>
                 )}
 

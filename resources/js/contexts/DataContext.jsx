@@ -205,18 +205,21 @@ export function DataProvider({ children }) {
             date: payload.date,
         });
         setReservations((prev) => [mapReservation(data), ...prev]);
+        fetchVehicles();
         fetchNotifications();
     };
 
     const approveReservation = async (id) => {
         const { data } = await axios.post(`/api/reservations/${id}/approve`);
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        fetchVehicles();
         fetchNotifications();
     };
 
     const rejectReservation = async (id) => {
         const { data } = await axios.post(`/api/reservations/${id}/reject`);
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        fetchVehicles();
         fetchNotifications();
     };
 
@@ -235,6 +238,7 @@ export function DataProvider({ children }) {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        fetchVehicles();
     };
 
     const checkOutReservation = async (id, { endKm, endNotes, files }) => {
@@ -247,11 +251,7 @@ export function DataProvider({ children }) {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
-        if (data.end_km) {
-            setVehicles((prev) =>
-                prev.map((v) => (v.id === data.vehicle_id ? { ...v, currentKm: data.end_km } : v))
-            );
-        }
+        fetchVehicles();
         fetchNotifications();
     };
 
@@ -260,11 +260,7 @@ export function DataProvider({ children }) {
             operational,
         });
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
-        if (!operational) {
-            setVehicles((prev) =>
-                prev.map((v) => (v.id === data.vehicle_id ? { ...v, operational: false } : v))
-            );
-        }
+        fetchVehicles();
         fetchNotifications();
     };
 

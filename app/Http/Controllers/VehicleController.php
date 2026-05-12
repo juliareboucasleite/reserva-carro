@@ -11,21 +11,22 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class VehicleController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $vehicles = Vehicle::orderBy('id')->get();
         $active = $this->loadActiveReservations($vehicles->pluck('id'));
+        $user = $request->user();
 
         return response()->json(
-            $vehicles->map(fn ($v) => $this->withAvailability($v, $active->get($v->id, collect())))
+            $vehicles->map(fn ($v) => $this->withAvailability($v, $active->get($v->id, collect()), $user))
         );
     }
 
-    public function show(Vehicle $vehicle): JsonResponse
+    public function show(Request $request, Vehicle $vehicle): JsonResponse
     {
         $active = $this->loadActiveReservations(collect([$vehicle->id]));
         return response()->json(
-            $this->withAvailability($vehicle, $active->get($vehicle->id, collect()))
+            $this->withAvailability($vehicle, $active->get($vehicle->id, collect()), $request->user())
         );
     }
 
@@ -43,7 +44,7 @@ class VehicleController extends Controller
             ->groupBy('vehicle_id');
     }
 
-    private function withAvailability(Vehicle $vehicle, $activeReservations): array
+    private function withAvailability(Vehicle $vehicle, $activeReservations, $user): array
     {
         $inUse = $activeReservations->firstWhere('status', Reservation::STATUS_CHECKED_IN);
         $approved = $activeReservations->firstWhere('status', Reservation::STATUS_APPROVED);
@@ -63,14 +64,20 @@ class VehicleController extends Controller
             $availability = 'available';
         }
 
+        $canSeeRequester = $user
+            && (
+                in_array($user->role, ['manager', 'admin'], true)
+                || ($active && $active->requested_by === $user->id)
+            );
+
         return array_merge($vehicle->toArray(), [
             'availability' => $availability,
             'active_reservation' => $active ? [
-                'id' => $active->id,
+                'id' => $canSeeRequester ? $active->id : null,
                 'date' => $active->date?->format('Y-m-d'),
                 'status' => $active->status,
-                'requester_name' => $active->requester?->name,
-                'trip' => $active->trip,
+                'requester_name' => $canSeeRequester ? $active->requester?->name : null,
+                'trip' => $canSeeRequester ? $active->trip : null,
             ] : null,
         ]);
     }

@@ -102,7 +102,9 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                         <AvailabilityBadge vehicle={v} />
                                         {v.activeReservation && (
                                             <span className="text-[10px] text-muted">
-                                                {v.activeReservation.requesterName} · {v.activeReservation.date}
+                                                {[v.activeReservation.requesterName, v.activeReservation.date]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
                                             </span>
                                         )}
                                     </div>
@@ -206,7 +208,9 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                         <AvailabilityBadge vehicle={v} />
                         {v.activeReservation && (
                             <span className="text-xs text-muted">
-                                {v.activeReservation.requesterName} · {v.activeReservation.date}
+                                {[v.activeReservation.requesterName, v.activeReservation.date]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                             </span>
                         )}
                     </div>
