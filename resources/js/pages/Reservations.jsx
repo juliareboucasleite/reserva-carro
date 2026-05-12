@@ -13,6 +13,7 @@ import {
     Modal,
     MediaUpload,
     AngleUpload,
+    DamageCanvas,
 } from '../components/ui';
 import { PlusIcon, CheckIcon, XIcon, WrenchIcon } from '../components/Icons';
 
@@ -601,20 +602,55 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
     const [endKm, setEndKm] = useState('');
     const [endNotes, setEndNotes] = useState('');
     const [endMedia, setEndMedia] = useState([]);
+    const [damages, setDamages] = useState([]);
+    const [editingDamageId, setEditingDamageId] = useState(null);
 
     React.useEffect(() => {
         if (open) {
             setEndKm(reservation?.startKm || '');
             setEndNotes('');
             setEndMedia([]);
+            setDamages([]);
+            setEditingDamageId(null);
         }
     }, [open, reservation]);
 
     if (!reservation || !vehicle) return null;
 
+    const editingDamage = damages.find((d) => d.id === editingDamageId);
+
+    function addDamageAt({ x, y }) {
+        const id = `tmp-${Date.now()}`;
+        setDamages((prev) => [
+            ...prev,
+            {
+                id,
+                x,
+                y,
+                damage_type: 'scratch',
+                severity: 'low',
+                description: '',
+                photoFile: null,
+                photoPreviewUrl: null,
+            },
+        ]);
+        setEditingDamageId(id);
+    }
+
+    function updateDamage(id, patch) {
+        setDamages((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    }
+
+    function removeDamage(id) {
+        const target = damages.find((d) => d.id === id);
+        if (target?.photoPreviewUrl) URL.revokeObjectURL(target.photoPreviewUrl);
+        setDamages((prev) => prev.filter((d) => d.id !== id));
+        if (editingDamageId === id) setEditingDamageId(null);
+    }
+
     const submit = (e) => {
         e.preventDefault();
-        onConfirm({ endKm: Number(endKm), endNotes, endMedia });
+        onConfirm({ endKm: Number(endKm), endNotes, endMedia, damages });
     };
 
     return (
