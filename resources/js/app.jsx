@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Vehicles, { VehicleDetail } from './pages/Vehicles';
 import Reservations from './pages/Reservations';
+import Damages from './pages/Damages';
 import Maintenance from './pages/Maintenance';
 import Admin from './pages/Admin';
 
@@ -77,6 +78,7 @@ function AppShell() {
                 onClearInitial={() => setPendingReservationVehicle(null)}
             />
         );
+    else if (view === 'damages') content = <Damages />;
     else if (view === 'maintenance') content = <Maintenance />;
     else if (view === 'admin') content = <Admin />;
     else content = <Dashboard />;
