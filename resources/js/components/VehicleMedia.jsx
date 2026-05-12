@@ -1,5 +1,4 @@
 import React from 'react';
-import { VehicleArt } from './Icons';
 
 export default function VehicleMedia({
     vehicle,
@@ -18,5 +17,11 @@ export default function VehicleMedia({
         );
     }
 
-    return <VehicleArt category={vehicle?.category} className={className} />;
+    return (
+        <div
+            className={`flex items-center justify-center bg-paper-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted ${className}`}
+        >
+            {vehicle?.category || 'veiculo'}
+        </div>
+    );
 }
