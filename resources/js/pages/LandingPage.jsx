@@ -253,6 +253,15 @@ function buildSearchOffer(vehicle, routeData, pickupLocation, returnLocation) {
     };
 }
 
+function getRatingBucketLabel(rating) {
+    const value = Number(rating);
+
+    if (value >= 8.5) return 'Excelente';
+    if (value >= 8) return 'Muito Bom';
+    if (value >= 7.5) return 'Bom';
+    return 'Regular';
+}
+
 export default function LandingPage({ onGoToLogin }) {
     const { t, lang, setLang } = useI18n();
     const { vehicles } = useData();
@@ -280,6 +289,12 @@ export default function LandingPage({ onGoToLogin }) {
     const [selectedSuppliers, setSelectedSuppliers] = useState([]);
     const [selectedPickupModes, setSelectedPickupModes] = useState([]);
     const [selectedFeatures, setSelectedFeatures] = useState([]);
+    const [selectedRatings, setSelectedRatings] = useState([]);
+    const [selectedProtections, setSelectedProtections] = useState([]);
+    const [selectedIncluded, setSelectedIncluded] = useState([]);
+    const [selectedMileage, setSelectedMileage] = useState([]);
+    const [selectedPayments, setSelectedPayments] = useState([]);
+    const [promoOnly, setPromoOnly] = useState(false);
     const [priceMin, setPriceMin] = useState('');
     const [priceMax, setPriceMax] = useState('');
     const [sortOrder, setSortOrder] = useState('recommended');
