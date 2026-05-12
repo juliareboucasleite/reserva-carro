@@ -20,10 +20,16 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'surname',
         'email',
         'password',
         'role',
         'team',
+        'country',
+        'nif',
+        'birthdate',
+        'phone',
+        'newsletter_opt_in',
     ];
 
     /**
@@ -46,6 +52,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthdate' => 'date',
+            'newsletter_opt_in' => 'boolean',
         ];
     }
 }
