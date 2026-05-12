@@ -151,6 +151,10 @@ export const translations = {
             requestThis: 'Reservar esta viatura',
             markOperational: 'Marcar operacional',
             markInoperational: 'Marcar inoperacional',
+            dueOverdue: 'Vencido',
+            dueToday: 'Hoje',
+            dueInDaysOne: 'Em 1 dia',
+            dueInDays: 'Em {n} dias',
         },
         reservations: {
             title: 'Reservas',
@@ -377,6 +381,10 @@ export const translations = {
             requestThis: 'Reserve this vehicle',
             markOperational: 'Mark operational',
             markInoperational: 'Mark out of service',
+            dueOverdue: 'Overdue',
+            dueToday: 'Today',
+            dueInDaysOne: 'In 1 day',
+            dueInDays: 'In {n} days',
         },
         reservations: {
             title: 'Reservations',
