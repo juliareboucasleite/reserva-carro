@@ -10,6 +10,7 @@ import {
     UsersIcon,
     LogoutIcon,
     BellIcon,
+    AlertIcon,
 } from './Icons';
 
 export default function DashboardLayout({ currentView, onNavigate, children }) {
@@ -21,6 +22,7 @@ export default function DashboardLayout({ currentView, onNavigate, children }) {
         { id: 'dashboard', label: t.nav.dashboard, icon: DashboardIcon, roles: 'all' },
         { id: 'vehicles', label: t.nav.vehicles, icon: CarIcon, roles: 'all' },
         { id: 'reservations', label: t.nav.reservations, icon: CalendarIcon, roles: 'all' },
+        { id: 'damages', label: t.nav.damages, icon: AlertIcon, roles: 'all' },
         { id: 'maintenance', label: t.nav.maintenance, icon: WrenchIcon, roles: [ROLES.MANAGER, ROLES.ADMIN] },
         { id: 'admin', label: t.nav.admin, icon: UsersIcon, roles: [ROLES.ADMIN] },
     ];
