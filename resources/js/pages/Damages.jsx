@@ -13,7 +13,7 @@ export default function Damages() {
     const isManager = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
 
     const visibleDamages = [...damages]
-        .filter((damage) => isManager || damage.reservation?.requestedByName === user.name)
+        .filter((damage) => isManager || damage.reservation?.requestedBy === user.id)
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     return (
