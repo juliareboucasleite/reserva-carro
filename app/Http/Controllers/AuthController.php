@@ -45,18 +45,30 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'surname' => ['required', 'string', 'max:255'],
+            'country' => ['required', 'string', 'size:2'],
+            'nif' => ['required', 'string', 'max:32'],
+            'birthdate' => ['required', 'date', 'before:today'],
+            'phone' => ['required', 'string', 'max:32'],
+            'email' => ['required', 'email', 'max:255', 'confirmed', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
             'team' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', Rule::in(['driver'])],
+            'newsletter_opt_in' => ['nullable', 'boolean'],
         ]);
 
         $user = User::create([
             'name' => $data['name'],
+            'surname' => $data['surname'],
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => $data['role'] ?? 'driver',
             'team' => $data['team'] ?? 'Operações',
+            'country' => $data['country'],
+            'nif' => $data['nif'],
+            'birthdate' => $data['birthdate'],
+            'phone' => $data['phone'],
+            'newsletter_opt_in' => (bool) ($data['newsletter_opt_in'] ?? false),
         ]);
 
         Auth::login($user);
@@ -89,9 +101,14 @@ class AuthController extends Controller
         return [
             'id' => $user->id,
             'name' => $user->name,
+            'surname' => $user->surname,
             'email' => $user->email,
             'role' => $user->role,
             'team' => $user->team,
+            'country' => $user->country,
+            'nif' => $user->nif,
+            'birthdate' => $user->birthdate?->format('Y-m-d'),
+            'phone' => $user->phone,
         ];
     }
 }
