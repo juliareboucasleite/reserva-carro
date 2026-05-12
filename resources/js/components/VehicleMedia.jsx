@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveVehicleImage } from '../utils/vehicleImages';
 
 export default function VehicleMedia({
     vehicle,
@@ -6,10 +7,12 @@ export default function VehicleMedia({
     imageClassName = '',
     alt,
 }) {
-    if (vehicle?.image) {
+    const src = resolveVehicleImage(vehicle?.image);
+
+    if (src) {
         return (
             <img
-                src={vehicle.image}
+                src={src}
                 alt={alt || vehicle.name}
                 className={imageClassName || className}
                 loading="lazy"
