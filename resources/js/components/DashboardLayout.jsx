@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { useData } from '../contexts/DataContext';
+import { useData, filterNotificationsFor } from '../contexts/DataContext';
 import {
     DashboardIcon,
     CarIcon,
@@ -143,8 +143,11 @@ export default function DashboardLayout({ currentView, onNavigate, children }) {
 
 function NotificationsBell() {
     const { t } = useI18n();
-    const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
+    const { user } = useAuth();
+    const { notifications: allNotifications, markNotificationRead, markAllNotificationsRead } =
         useData();
+    const notifications = filterNotificationsFor(allNotifications, user);
+    const unreadCount = notifications.filter((n) => !n.read).length;
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 

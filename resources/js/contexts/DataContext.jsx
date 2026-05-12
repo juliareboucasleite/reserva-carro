@@ -234,11 +234,23 @@ const INITIAL_RESERVATIONS = [
 
 export const NOTIFICATION_TYPES = {
     RESERVATION_REQUESTED: 'reservation_requested',
+    RESERVATION_APPROVED: 'reservation_approved',
+    RESERVATION_REJECTED: 'reservation_rejected',
     RESERVATION_CHECKED_OUT: 'reservation_checked_out',
+    OPERATIONAL_CONFIRMATION_NEEDED: 'operational_confirmation_needed',
     VEHICLE_NON_OPERATIONAL: 'vehicle_non_operational',
     INSPECTION_DUE: 'inspection_due',
     INSURANCE_DUE: 'insurance_due',
 };
+
+export function filterNotificationsFor(notifications, user) {
+    if (!user) return [];
+    return notifications.filter((n) => {
+        if (n.forUserId !== undefined) return n.forUserId === user.id;
+        if (n.forRoles) return n.forRoles.includes(user.role);
+        return true;
+    });
+}
 
 function daysBetween(dateStr) {
     if (!dateStr) return null;
@@ -312,6 +324,7 @@ export function DataProvider({ children }) {
             type: NOTIFICATION_TYPES.RESERVATION_REQUESTED,
             reservationId: id,
             vehicleId: created.vehicleId,
+            forRoles: ['manager', 'admin'],
             message: `${created.requestedByName} pediu reserva da viatura ${vehicle?.name || ''} (${created.trip})`,
         });
     };
@@ -322,18 +335,53 @@ export function DataProvider({ children }) {
 
         setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
+        if (!current) return;
+        const after = { ...current, ...patch };
+        const vehicle = vehicles.find((v) => v.id === after.vehicleId);
+
         if (
-            current &&
+            beforeStatus !== RES_STATUS.APPROVED &&
+            patch.status === RES_STATUS.APPROVED
+        ) {
+            pushEvent({
+                type: NOTIFICATION_TYPES.RESERVATION_APPROVED,
+                reservationId: id,
+                vehicleId: after.vehicleId,
+                forUserId: after.requestedBy,
+                message: `Reserva aprovada: ${vehicle?.name || ''} (${after.trip}) — pronta para check-in`,
+            });
+        }
+
+        if (
+            beforeStatus !== RES_STATUS.REJECTED &&
+            patch.status === RES_STATUS.REJECTED
+        ) {
+            pushEvent({
+                type: NOTIFICATION_TYPES.RESERVATION_REJECTED,
+                reservationId: id,
+                vehicleId: after.vehicleId,
+                forUserId: after.requestedBy,
+                message: `Reserva rejeitada: ${vehicle?.name || ''} (${after.trip})`,
+            });
+        }
+
+        if (
             beforeStatus !== RES_STATUS.CHECKED_OUT &&
             patch.status === RES_STATUS.CHECKED_OUT
         ) {
-            const after = { ...current, ...patch };
-            const vehicle = vehicles.find((v) => v.id === after.vehicleId);
             pushEvent({
                 type: NOTIFICATION_TYPES.RESERVATION_CHECKED_OUT,
                 reservationId: id,
                 vehicleId: after.vehicleId,
+                forRoles: ['manager', 'admin'],
                 message: `Reserva fechada: ${vehicle?.name || ''} — ${after.endKm?.toLocaleString('pt-PT') || '?'} km`,
+            });
+            pushEvent({
+                type: NOTIFICATION_TYPES.OPERATIONAL_CONFIRMATION_NEEDED,
+                reservationId: id,
+                vehicleId: after.vehicleId,
+                forRoles: ['manager', 'admin'],
+                message: `Confirmar estado operacional: ${vehicle?.name || ''} (${vehicle?.plate || ''})`,
             });
         }
     };
@@ -355,6 +403,7 @@ export function DataProvider({ children }) {
             pushEvent({
                 type: NOTIFICATION_TYPES.VEHICLE_NON_OPERATIONAL,
                 vehicleId,
+                forRoles: ['manager', 'admin'],
                 message: `Viatura ${vehicle?.name || ''} (${vehicle?.plate || ''}) marcada como não operacional`,
             });
         }
@@ -382,6 +431,7 @@ export function DataProvider({ children }) {
                     vehicleId: v.id,
                     createdAt: Date.now(),
                     days: inspDays,
+                    forRoles: ['manager', 'admin'],
                     message:
                         inspDays < 0
                             ? `Inspeção vencida: ${v.name} (${v.plate})`
@@ -399,6 +449,7 @@ export function DataProvider({ children }) {
                     vehicleId: v.id,
                     createdAt: Date.now(),
                     days: insDays,
+                    forRoles: ['manager', 'admin'],
                     message:
                         insDays < 0
                             ? `Renovação de seguro vencida: ${v.name} (${v.plate})`
