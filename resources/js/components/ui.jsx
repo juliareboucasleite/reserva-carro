@@ -95,6 +95,55 @@ const BADGE_TONES = {
     neutral: 'bg-paper-3 text-muted',
 };
 
+export function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const target = new Date(dateStr);
+    if (Number.isNaN(target.getTime())) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+}
+
+export function DueDate({ value }) {
+    const { t } = useI18n();
+    const days = daysUntil(value);
+
+    if (!value || days === null) {
+        return <span className="font-mono text-xs text-muted">—</span>;
+    }
+
+    let tone = null;
+    let label = null;
+
+    if (days < 0) {
+        tone = 'inoperational';
+        label = t.vehicles.dueOverdue;
+    } else if (days === 0) {
+        tone = 'inoperational';
+        label = t.vehicles.dueToday;
+    } else if (days <= 5) {
+        tone = 'inoperational';
+        label =
+            days === 1
+                ? t.vehicles.dueInDaysOne
+                : t.vehicles.dueInDays.replace('{n}', days);
+    } else if (days <= 15) {
+        tone = 'pending';
+        label = t.vehicles.dueInDays.replace('{n}', days);
+    } else if (days <= 30) {
+        tone = 'neutral';
+        label = t.vehicles.dueInDays.replace('{n}', days);
+    }
+
+    return (
+        <span className="inline-flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs text-ink">{value}</span>
+            {tone && <Badge tone={tone}>{label}</Badge>}
+        </span>
+    );
+}
+
 export function Badge({ tone = 'neutral', children }) {
     return (
         <span
