@@ -120,6 +120,7 @@ function mapDamage(d) {
         reservation: d.reservation
             ? {
                   id: d.reservation.id,
+                  requestedBy: d.reservation.requested_by,
                   requestedByName: d.reservation.requester?.name || '',
                   vehicle: d.reservation.vehicle ? mapVehicle(d.reservation.vehicle) : null,
               }
