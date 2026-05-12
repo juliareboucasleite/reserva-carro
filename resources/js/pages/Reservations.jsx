@@ -687,36 +687,65 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
             onClose={onClose}
             kicker={`04 · ${vehicle.name} · ${vehicle.plate}`}
             title={t.reservations.checkOutTitle}
-            maxWidth="max-w-6xl"
+            maxWidth="max-w-4xl"
         >
-            <form onSubmit={submit} className="space-y-5">
-                <Field label={t.reservations.endKm}>
-                    <Input
-                        type="number"
-                        value={endKm}
-                        onChange={(e) => setEndKm(e.target.value)}
-                        required
-                    />
-                </Field>
-                <Field label={t.reservations.endNotes}>
-                    <Textarea
-                        rows={3}
-                        value={endNotes}
-                        onChange={(e) => setEndNotes(e.target.value)}
-                        placeholder={t.reservations.endNotesPlaceholder}
-                    />
-                </Field>
-                <MediaUpload value={endMedia} onChange={setEndMedia} />
+            <form onSubmit={submit} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-[190px_1fr]">
+                    <Field label={t.reservations.endKm}>
+                        <Input
+                            type="number"
+                            value={endKm}
+                            onChange={(e) => setEndKm(e.target.value)}
+                            required
+                        />
+                    </Field>
+                    <Field label={t.reservations.endNotes}>
+                        <Textarea
+                            rows={3}
+                            value={endNotes}
+                            onChange={(e) => setEndNotes(e.target.value)}
+                            placeholder={t.reservations.endNotesPlaceholder}
+                        />
+                    </Field>
+                </div>
+                <AngleUpload
+                    value={endAngleMedia}
+                    onChange={setEndAngleMedia}
+                    accept="image/*,video/*"
+                    title={t.reservations.endMediaLabel}
+                    hint={t.reservations.endAngleMediaHint}
+                />
+                <div className="rounded-md border border-border-soft bg-paper-2/40 px-4 py-3">
+                    <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                            type="checkbox"
+                            checked={hasDamages}
+                            onChange={(e) => {
+                                const nextValue = e.target.checked;
+                                setHasDamages(nextValue);
+                                if (!nextValue) {
+                                    setDamages([]);
+                                    setEditingDamageId(null);
+                                }
+                            }}
+                            className="mt-1 h-4 w-4 rounded border-border text-ink focus:ring-ink/20"
+                        />
+                        <div>
+                            <p className="text-sm font-semibold text-ink">{t.damages.toggleLabel}</p>
+                            <p className="mt-1 text-xs text-muted">{t.damages.hint}</p>
+                        </div>
+                    </label>
+                </div>
+                {hasDamages && (
                 <div className="rounded-md border border-border-soft bg-paper-2/30 p-4">
                     <div className="mb-4">
                         <p className="text-sm font-semibold text-ink">{t.damages.title}</p>
-                        <p className="mt-1 text-xs text-muted">{t.damages.hint}</p>
                         <p className="mt-2 text-xs font-medium text-muted">
                             {t.damages.count.replace('{n}', damages.length)}
                         </p>
                     </div>
 
-                    <div className="grid gap-5 xl:grid-cols-[520px_1fr]">
+                    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
                         <DamageCanvas
                             category={vehicle.category}
                             damages={damages}
@@ -727,8 +756,8 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
 
                         <div className="overflow-hidden rounded-md border border-border-soft bg-paper">
                             {damages.length === 0 ? (
-                                <div className="flex min-h-[180px] items-center justify-center px-6 text-center text-sm text-muted">
-                                    Tap on the vehicle&apos;s part to add damage
+                                <div className="flex min-h-[140px] items-center justify-center px-6 text-center text-sm text-muted">
+                                    {t.damages.emptyPanel}
                                 </div>
                             ) : (
                                 <table className="min-w-full text-sm">
@@ -784,6 +813,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                         </div>
                     </div>
                 </div>
+                )}
                 <p className="rounded-md border border-border-soft bg-paper-2/60 px-3 py-2 text-[11px] text-muted">
                     {t.reservations.operationalManagerHint}
                 </p>
@@ -791,7 +821,7 @@ function CheckOutModal({ open, onClose, onConfirm, reservation, vehicle }) {
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}
                     </Button>
-                    <Button type="submit" variant="accent">
+                    <Button type="submit" variant="accent" disabled={!hasAllAngles}>
                         {t.reservations.doCheckOut}
                     </Button>
                 </div>
