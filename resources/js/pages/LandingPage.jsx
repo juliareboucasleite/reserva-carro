@@ -513,6 +513,11 @@ export default function LandingPage({ onGoToLogin }) {
         sortOrder,
     ]);
 
+    const filtered = useMemo(
+        () => filteredOffers.map((offer) => offer.vehicle),
+        [filteredOffers]
+    );
+
     const activeFilterTags = [
         ...(promoOnly ? [{ type: 'promo', value: 'Goleada de Ofertas' }] : []),
         ...selectedCategories.map((value) => ({ type: 'category', value })),
