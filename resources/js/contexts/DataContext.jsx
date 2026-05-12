@@ -209,12 +209,16 @@ export function DataProvider({ children }) {
         fetchNotifications();
     };
 
-    const checkInReservation = async (id, { driver, startKm, startNotes, files }) => {
+    const checkInReservation = async (id, { driver, startKm, startNotes, angleMedia }) => {
         const fd = new FormData();
         fd.append('driver', driver);
         fd.append('start_km', String(startKm));
         if (startNotes) fd.append('start_notes', startNotes);
-        (files || []).forEach((file) => fd.append('media[]', file));
+
+        ['front', 'back', 'left', 'right'].forEach((angle) => {
+            const entry = angleMedia?.[angle];
+            if (entry?.file) fd.append(`media[${angle}]`, entry.file);
+        });
 
         const { data } = await axios.post(`/api/reservations/${id}/checkin`, fd, {
             headers: { 'Content-Type': 'multipart/form-data' },
