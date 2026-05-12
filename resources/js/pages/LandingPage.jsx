@@ -107,6 +107,12 @@ export default function LandingPage({ onGoToLogin }) {
 
     const [pickupLocation, setPickupLocation] = useState('');
     const [returnLocation, setReturnLocation] = useState('');
+    const [pickupLocationData, setPickupLocationData] = useState(null);
+    const [returnLocationData, setReturnLocationData] = useState(null);
+    const [locationOptions, setLocationOptions] = useState([]);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [routeData, setRouteData] = useState(null);
+    const [routeLoading, setRouteLoading] = useState(false);
     const [pickupDate, setPickupDate] = useState(formatDateInput(today));
     const [returnDate, setReturnDate] = useState(formatDateInput(tomorrow));
     const [pickupTime, setPickupTime] = useState('10:00');
