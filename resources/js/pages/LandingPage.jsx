@@ -141,7 +141,7 @@ export default function LandingPage({ onGoToLogin }) {
         const returnQuery = returnLocation.trim().toLowerCase();
 
         return vehicles.filter((vehicle) => {
-            if (statusFilter === 'operational' && !vehicle.operational) return false;
+            if (statusFilter === 'available' && vehicle.availability !== 'available') return false;
 
             const haystack = [
                 vehicle.name,
@@ -459,10 +459,10 @@ export default function LandingPage({ onGoToLogin }) {
                                 Todas
                             </FilterChip>
                             <FilterChip
-                                active={statusFilter === 'operational'}
-                                onClick={() => setStatusFilter('operational')}
+                                active={statusFilter === 'available'}
+                                onClick={() => setStatusFilter('available')}
                             >
-                                Operacionais
+                                Disponíveis
                             </FilterChip>
                         </div>
                     </div>
@@ -534,7 +534,7 @@ function VehicleCard({ vehicle, onReserve }) {
     return (
         <article className="group flex flex-col overflow-hidden rounded-[24px] border border-border bg-paper transition hover:-translate-y-0.5 hover:border-ink/30 hover:shadow-xl">
             <div className="flex items-center justify-between border-b border-border-soft px-4 py-3">
-                <StatusDot operational={vehicle.operational} />
+                <StatusDot vehicle={vehicle} />
                 <span className="font-mono text-sm font-semibold tracking-wider text-ink">
                     {vehicle.plate}
                 </span>
@@ -586,11 +586,17 @@ function VehicleCard({ vehicle, onReserve }) {
                     </p>
                 </div>
 
+                {vehicle.activeReservation && vehicle.availability !== 'available' && vehicle.availability !== 'inoperational' && (
+                    <p className="rounded-md bg-warn-soft px-2.5 py-1.5 text-[11px] text-warn">
+                        {vehicle.activeReservation.requesterName} · {vehicle.activeReservation.date}
+                    </p>
+                )}
+
                 <div className="mt-auto flex items-center justify-between border-t border-border-soft pt-3 text-xs">
                     <span className="text-muted">{vehicle.insuranceCompany}</span>
                     <button
                         onClick={onReserve}
-                        disabled={!vehicle.operational}
+                        disabled={vehicle.availability !== 'available'}
                         className="font-medium text-ink underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-muted-soft disabled:no-underline"
                     >
                         Reservar →
@@ -809,17 +815,20 @@ function TimePanel({ selected, onSelect }) {
     );
 }
 
-function StatusDot({ operational }) {
+const AVAILABILITY_LABEL = {
+    available: { text: 'Disponível', cls: 'text-positive', dot: 'bg-positive' },
+    pre_reserved: { text: 'Pré-reservada', cls: 'text-warn', dot: 'bg-warn' },
+    reserved: { text: 'Reservada', cls: 'text-warn', dot: 'bg-warn' },
+    in_use: { text: 'Em uso', cls: 'text-ink', dot: 'bg-ink' },
+    inoperational: { text: 'Inoperacional', cls: 'text-danger', dot: 'bg-danger' },
+};
+
+function StatusDot({ vehicle }) {
+    const info = AVAILABILITY_LABEL[vehicle?.availability] || AVAILABILITY_LABEL.available;
     return (
         <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider">
-            <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                    operational ? 'bg-positive' : 'bg-danger'
-                }`}
-            />
-            <span className={operational ? 'text-positive' : 'text-danger'}>
-                {operational ? 'Operacional' : 'Inoperacional'}
-            </span>
+            <span className={`h-1.5 w-1.5 rounded-full ${info.dot}`} />
+            <span className={info.cls}>{info.text}</span>
         </span>
     );
 }

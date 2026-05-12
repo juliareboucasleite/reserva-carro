@@ -341,7 +341,7 @@ function NewReservationModal({ open, onClose, onCreate, preselectVehicle }) {
         onCreate({ vehicleId: Number(vehicleId), trip, date });
     };
 
-    const operational = vehicles.filter((v) => v.operational);
+    const operational = vehicles.filter((v) => v.availability === 'available');
 
     return (
         <Modal open={open} onClose={onClose} kicker="01 · Pré-Reserva" title={t.reservations.preReserveTitle}>
