@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import DashboardLayout from './components/DashboardLayout';
 import LandingPage from './pages/LandingPage';
+import SearchResultsPage from './pages/SearchResultsPage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Vehicles, { VehicleDetail } from './pages/Vehicles';
@@ -17,7 +18,9 @@ import Admin from './pages/Admin';
 
 function AppShell() {
     const { isAuthenticated, authLoading } = useAuth();
-    const [publicView, setPublicView] = useState('landing');
+    const [publicPage, setPublicPage] = useState('landing');
+    const [publicModal, setPublicModal] = useState(null);
+    const [publicSearch, setPublicSearch] = useState(null);
     const [view, setView] = useState('dashboard');
     const [vehicleId, setVehicleId] = useState(null);
     const [pendingReservationVehicle, setPendingReservationVehicle] = useState(null);
@@ -33,9 +36,23 @@ function AppShell() {
     if (!isAuthenticated) {
         return (
             <>
-                <LandingPage onGoToLogin={() => setPublicView('login')} />
-                {publicView === 'login' && (
-                    <Login onBack={() => setPublicView('landing')} />
+                {publicPage === 'search-results' ? (
+                    <SearchResultsPage
+                        search={publicSearch}
+                        onBack={() => setPublicPage('landing')}
+                        onGoToLogin={() => setPublicModal('login')}
+                    />
+                ) : (
+                    <LandingPage
+                        onGoToLogin={() => setPublicModal('login')}
+                        onSearch={(search) => {
+                            setPublicSearch(search);
+                            setPublicPage('search-results');
+                        }}
+                    />
+                )}
+                {publicModal === 'login' && (
+                    <Login onBack={() => setPublicModal(null)} />
                 )}
             </>
         );
