@@ -211,7 +211,7 @@ export default function LandingPage({ onGoToLogin }) {
 
     return (
         <div className="min-h-screen bg-paper text-ink">
-            <section className="relative overflow-hidden">
+            <section className="relative overflow-visible">
                 <div className="absolute inset-0">
                     <img
                         src={heroVehicle?.image}
@@ -258,7 +258,7 @@ export default function LandingPage({ onGoToLogin }) {
 
                     <div
                         ref={widgetRef}
-                        className="mt-10 rounded-[28px] bg-white p-5 shadow-[0_22px_80px_rgba(15,23,42,0.22)] md:p-6"
+                        className="relative z-20 mt-10 overflow-visible rounded-[28px] bg-white p-5 shadow-[0_22px_80px_rgba(15,23,42,0.22)] md:p-6"
                     >
                         <div className="grid gap-3 lg:grid-cols-[1.45fr_1.45fr_1fr_0.72fr_1fr_0.72fr_0.9fr]">
                             <div className="relative">

@@ -30,10 +30,14 @@ function AppShell() {
     }
 
     if (!isAuthenticated) {
-        if (publicView === 'login') {
-            return <Login onBack={() => setPublicView('landing')} />;
-        }
-        return <LandingPage onGoToLogin={() => setPublicView('login')} />;
+        return (
+            <>
+                <LandingPage onGoToLogin={() => setPublicView('login')} />
+                {publicView === 'login' && (
+                    <Login onBack={() => setPublicView('landing')} />
+                )}
+            </>
+        );
     }
 
     const navigate = (next) => {
