@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DamageController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
@@ -48,6 +49,10 @@ Route::middleware('auth')->prefix('api')->group(function () {
 
     Route::get('/maintenance', [MaintenanceController::class, 'index']);
     Route::post('/maintenance', [MaintenanceController::class, 'store']);
+
+    Route::get('/damages', [DamageController::class, 'index']);
+    Route::post('/reservations/{reservation}/damages', [DamageController::class, 'store']);
+    Route::patch('/damages/{damage}/cost', [DamageController::class, 'setCost']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);

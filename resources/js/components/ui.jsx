@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { CameraIcon, TrashIcon } from './Icons';
+import { resolveExteriorSvg } from '../utils/vehicleExterior';
 
 export function PageHeader({ title, subtitle, kicker, action }) {
     return (
@@ -77,11 +78,145 @@ export function Textarea(props) {
     return <textarea {...props} className={`${fieldBase} ${props.className || ''}`} />;
 }
 
-export function Select({ children, ...props }) {
+const SELECT_VALUE_TONES = {
+    pending: 'text-amber-600',
+    requested: 'text-amber-600',
+    approved: 'text-emerald-600',
+    confirmed: 'text-emerald-600',
+    checked_out: 'text-blue-600',
+    completed: 'text-blue-600',
+    rejected: 'text-rose-600',
+    cancelled: 'text-rose-600',
+    canceled: 'text-rose-600',
+    maintenance: 'text-slate-500',
+};
+
+export function Select({
+    children,
+    value,
+    onChange,
+    className = '',
+    disabled = false,
+    placeholder = 'Selecionar',
+    toneMap = {},
+    ...props
+}) {
+    const rootRef = useRef(null);
+    const [open, setOpen] = useState(false);
+
+    const options = React.Children.toArray(children)
+        .filter(React.isValidElement)
+        .map((child) => ({
+            value: String(child.props.value ?? ''),
+            label: child.props.children,
+            disabled: Boolean(child.props.disabled),
+        }));
+
+    const normalizedValue = String(value ?? '');
+    const selectedOption =
+        options.find((option) => option.value === normalizedValue) ?? options[0] ?? null;
+    const currentTone = toneMap[normalizedValue] || SELECT_VALUE_TONES[normalizedValue] || '';
+
+    useEffect(() => {
+        function handlePointerDown(event) {
+            if (rootRef.current && !rootRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        }
+
+        function handleEscape(event) {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, []);
+
+    function emitChange(nextValue) {
+        onChange?.({ target: { value: nextValue } });
+        setOpen(false);
+    }
+
     return (
-        <select {...props} className={`${fieldBase} ${props.className || ''}`}>
-            {children}
-        </select>
+        <div ref={rootRef} className="relative">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setOpen((current) => !current)}
+                className={`flex min-h-[48px] w-full items-center justify-between rounded-md border border-border bg-paper px-3 py-2 text-left text-sm outline-none transition focus:border-ink focus:ring-1 focus:ring-ink/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    open ? 'border-sky-500 ring-2 ring-sky-100' : 'hover:border-ink/30'
+                } ${className}`}
+            >
+                <span className={`truncate font-medium ${normalizedValue ? currentTone || 'text-ink' : 'text-muted-soft'}`}>
+                    {selectedOption?.label || placeholder}
+                </span>
+                <svg
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 0 1 1.1 1.02l-4.25 4.5a.75.75 0 0 1-1.1 0l-4.25-4.5a.75.75 0 0 1 .02-1.04Z" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-[0_18px_44px_rgba(15,23,42,0.18)]">
+                    {options.map((option, index) => {
+                        const tone =
+                            toneMap[option.value] ||
+                            SELECT_VALUE_TONES[option.value] ||
+                            'text-ink';
+                        const selected = option.value === normalizedValue;
+
+                        return (
+                            <button
+                                key={`${option.value}-${index}`}
+                                type="button"
+                                disabled={option.disabled}
+                                onClick={() => emitChange(option.value)}
+                                className={`flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold transition ${
+                                    selected
+                                        ? 'bg-sky-50'
+                                        : 'bg-white hover:bg-slate-50'
+                                } ${tone} disabled:cursor-not-allowed disabled:opacity-40 ${
+                                    index !== options.length - 1 ? 'border-b border-slate-100' : ''
+                                }`}
+                            >
+                                <span className="truncate">{option.label}</span>
+                                {selected && (
+                                    <svg
+                                        className="h-4 w-4 shrink-0 text-slate-400"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 0 1 1.1 1.02l-4.25 4.5a.75.75 0 0 1-1.1 0l-4.25-4.5a.75.75 0 0 1 .02-1.04Z" />
+                                    </svg>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            <select
+                {...props}
+                value={value}
+                onChange={onChange}
+                disabled={disabled}
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+            >
+                {children}
+            </select>
+        </div>
     );
 }
 
@@ -363,6 +498,65 @@ function AngleSlot({ label, replaceLabel, removeLabel, entry, disabled, onPick, 
                 onChange={(e) => onPick(e.target.files?.[0])}
                 disabled={disabled}
             />
+        </div>
+    );
+}
+
+export function DamageCanvas({
+    category = 'car',
+    damages = [],
+    selectedId = null,
+    onAddPoint,
+    onSelect,
+    onRemove,
+    readOnly = false,
+}) {
+    const containerRef = useRef(null);
+
+    function handleClick(event) {
+        if (readOnly || !onAddPoint) return;
+        if (event.target.closest('[data-damage-dot]')) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width;
+        const y = (event.clientY - rect.top) / rect.height;
+        onAddPoint({ x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) });
+    }
+
+    return (
+        <div
+            ref={containerRef}
+            onClick={handleClick}
+            className={`relative mx-auto w-full max-w-[260px] overflow-hidden rounded-md border border-border-soft bg-paper-2 ${
+                readOnly ? '' : 'cursor-crosshair'
+            }`}
+        >
+            <img
+                src={resolveExteriorSvg(category)}
+                alt="Exterior"
+                className="block h-auto w-full select-none"
+                draggable={false}
+            />
+            {damages.map((d, index) => (
+                <button
+                    key={d.id || `tmp-${index}`}
+                    data-damage-dot
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onSelect) onSelect(d);
+                    }}
+                    title={d.description || d.damage_type}
+                    style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition ${
+                        selectedId === d.id
+                            ? 'h-6 w-6 border-white bg-danger shadow-[0_0_0_3px_rgba(185,28,28,0.4)]'
+                            : 'h-4 w-4 border-white bg-danger hover:scale-110'
+                    } ${d.cost !== null && d.cost !== undefined ? 'opacity-70' : ''}`}
+                >
+                    <span className="sr-only">Dano {index + 1}</span>
+                </button>
+            ))}
         </div>
     );
 }

@@ -53,4 +53,9 @@ class Reservation extends Model
     {
         return $this->hasMany(ReservationMedia::class);
     }
+
+    public function damages(): HasMany
+    {
+        return $this->hasMany(ReservationDamage::class);
+    }
 }
