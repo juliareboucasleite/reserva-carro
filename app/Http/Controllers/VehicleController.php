@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -12,12 +13,66 @@ class VehicleController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Vehicle::orderBy('id')->get());
+        $vehicles = Vehicle::orderBy('id')->get();
+        $active = $this->loadActiveReservations($vehicles->pluck('id'));
+
+        return response()->json(
+            $vehicles->map(fn ($v) => $this->withAvailability($v, $active->get($v->id, collect())))
+        );
     }
 
     public function show(Vehicle $vehicle): JsonResponse
     {
-        return response()->json($vehicle);
+        $active = $this->loadActiveReservations(collect([$vehicle->id]));
+        return response()->json(
+            $this->withAvailability($vehicle, $active->get($vehicle->id, collect()))
+        );
+    }
+
+    private function loadActiveReservations($vehicleIds)
+    {
+        return Reservation::whereIn('vehicle_id', $vehicleIds)
+            ->whereIn('status', [
+                Reservation::STATUS_PENDING,
+                Reservation::STATUS_APPROVED,
+                Reservation::STATUS_CHECKED_IN,
+            ])
+            ->with('requester:id,name')
+            ->orderBy('date')
+            ->get()
+            ->groupBy('vehicle_id');
+    }
+
+    private function withAvailability(Vehicle $vehicle, $activeReservations): array
+    {
+        $inUse = $activeReservations->firstWhere('status', Reservation::STATUS_CHECKED_IN);
+        $approved = $activeReservations->firstWhere('status', Reservation::STATUS_APPROVED);
+        $pending = $activeReservations->firstWhere('status', Reservation::STATUS_PENDING);
+
+        $active = $inUse ?? $approved ?? $pending;
+
+        if (! $vehicle->operational) {
+            $availability = 'inoperational';
+        } elseif ($inUse) {
+            $availability = 'in_use';
+        } elseif ($approved) {
+            $availability = 'reserved';
+        } elseif ($pending) {
+            $availability = 'pre_reserved';
+        } else {
+            $availability = 'available';
+        }
+
+        return array_merge($vehicle->toArray(), [
+            'availability' => $availability,
+            'active_reservation' => $active ? [
+                'id' => $active->id,
+                'date' => $active->date?->format('Y-m-d'),
+                'status' => $active->status,
+                'requester_name' => $active->requester?->name,
+                'trip' => $active->trip,
+            ] : null,
+        ]);
     }
 
     public function store(Request $request): JsonResponse

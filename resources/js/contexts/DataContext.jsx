@@ -31,6 +31,16 @@ function mapVehicle(v) {
         responsible: v.responsible,
         phone: v.phone,
         base: v.base,
+        availability: v.availability || (v.operational ? 'available' : 'inoperational'),
+        activeReservation: v.active_reservation
+            ? {
+                  id: v.active_reservation.id,
+                  date: v.active_reservation.date,
+                  status: v.active_reservation.status,
+                  requesterName: v.active_reservation.requester_name,
+                  trip: v.active_reservation.trip,
+              }
+            : null,
     };
 }
 

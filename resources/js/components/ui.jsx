@@ -93,6 +93,10 @@ const BADGE_TONES = {
     checked_out: 'bg-paper-3 text-muted',
     operational: 'bg-positive-soft text-positive',
     inoperational: 'bg-danger-soft text-danger',
+    available: 'bg-positive-soft text-positive',
+    pre_reserved: 'bg-warn-soft text-warn',
+    reserved: 'bg-warn-soft text-warn',
+    in_use: 'bg-paper-3 text-ink',
     neutral: 'bg-paper-3 text-muted',
 };
 
