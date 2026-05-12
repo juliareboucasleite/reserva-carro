@@ -187,36 +187,34 @@ export default function Login({ onBack }) {
             onClick={onBack}
         >
             <div className="flex min-h-screen items-start justify-center px-4 py-12 md:py-16">
-                <div onClick={(event) => event.stopPropagation()} className="w-full">
-                    {mode === 'login' ? (
-                        <LoginCard
-                            copy={copy}
-                            form={loginForm}
-                            setForm={setLoginForm}
-                            onSubmit={handleLogin}
-                            onSwitch={() => {
-                                setMode('register');
-                                setError('');
-                            }}
-                            error={error}
-                            pending={pending}
-                        />
-                    ) : (
-                        <RegisterCard
-                            copy={copy}
-                            form={registerForm}
-                            update={updateRegister}
-                            onSubmit={handleRegister}
-                            onSwitch={() => {
-                                setMode('login');
-                                setError('');
-                            }}
-                            error={error}
-                            pending={pending}
-                            countryOptions={countryOptions}
-                        />
-                    )}
-                </div>
+                {mode === 'login' ? (
+                    <LoginCard
+                        copy={copy}
+                        form={loginForm}
+                        setForm={setLoginForm}
+                        onSubmit={handleLogin}
+                        onSwitch={() => {
+                            setMode('register');
+                            setError('');
+                        }}
+                        error={error}
+                        pending={pending}
+                    />
+                ) : (
+                    <RegisterCard
+                        copy={copy}
+                        form={registerForm}
+                        update={updateRegister}
+                        onSubmit={handleRegister}
+                        onSwitch={() => {
+                            setMode('login');
+                            setError('');
+                        }}
+                        error={error}
+                        pending={pending}
+                        countryOptions={countryOptions}
+                    />
+                )}
             </div>
         </div>
     );
@@ -224,7 +222,10 @@ export default function Login({ onBack }) {
 
 function LoginCard({ copy, form, setForm, onSubmit, onSwitch, error, pending }) {
     return (
-        <div className="mx-auto w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+        <div
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]"
+        >
             <div className="px-7 py-7">
                 <h2 className="text-xl font-semibold tracking-tight text-ink">{copy.signIn}</h2>
 
