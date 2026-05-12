@@ -262,7 +262,7 @@ function getRatingBucketLabel(rating) {
     return 'Regular';
 }
 
-export default function LandingPage({ onGoToLogin }) {
+export default function LandingPage({ onGoToLogin, onSearch }) {
     const { t, lang, setLang } = useI18n();
     const { vehicles } = useData();
     const widgetRef = useRef(null);
@@ -601,19 +601,38 @@ export default function LandingPage({ onGoToLogin }) {
 
     async function triggerSearch() {
         setActivePanel(null);
+        let nextRouteData = null;
 
         if (pickupLocationData && returnLocationData) {
             setRouteLoading(true);
             try {
                 const response = await estimateRoute(pickupLocationData, returnLocationData);
-                setRouteData(response.route || null);
+                nextRouteData = response.route || null;
+                setRouteData(nextRouteData);
             } catch (error) {
+                nextRouteData = null;
                 setRouteData(null);
             } finally {
                 setRouteLoading(false);
             }
         } else {
             setRouteData(null);
+        }
+
+        if (onSearch) {
+            onSearch({
+                pickupLocation,
+                returnLocation,
+                pickupLocationData,
+                returnLocationData,
+                pickupDate,
+                returnDate,
+                pickupTime,
+                returnTime,
+                residence,
+                routeData: nextRouteData,
+            });
+            return;
         }
 
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -905,7 +924,7 @@ export default function LandingPage({ onGoToLogin }) {
                 </div>
             </section>
 
-            <section ref={resultsRef} id="search" className="-mt-8 bg-paper-2 pt-18">
+            <section id="search-results-preview" className="hidden">
                 <div className="mx-auto max-w-7xl px-6 py-10">
                     <div className="rounded-[28px] border border-border bg-paper px-6 py-4 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1260,7 +1279,7 @@ export default function LandingPage({ onGoToLogin }) {
                 </div>
             </section>
 
-            <section id="search-legacy" className="hidden">
+            <section ref={resultsRef} id="search" className="-mt-8 bg-paper-2 pt-18">
                 <div className="mx-auto max-w-7xl px-6 py-10">
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                         <div>
