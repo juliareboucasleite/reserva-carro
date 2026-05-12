@@ -652,7 +652,7 @@ export function AvailabilityBadge({ vehicle }) {
 }
 
 export function isVehicleReservable(vehicle) {
-    return vehicle?.availability === 'available';
+    return Boolean(vehicle?.operational) && vehicle?.availability !== 'inoperational';
 }
 
 export function Badge({ tone = 'neutral', children }) {

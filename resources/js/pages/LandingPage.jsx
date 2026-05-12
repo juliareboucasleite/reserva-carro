@@ -141,7 +141,7 @@ export default function LandingPage({ onGoToLogin }) {
         const returnQuery = returnLocation.trim().toLowerCase();
 
         return vehicles.filter((vehicle) => {
-            if (statusFilter === 'available' && vehicle.availability !== 'available') return false;
+            if (statusFilter === 'available' && vehicle.availability === 'inoperational') return false;
 
             const haystack = [
                 vehicle.name,
@@ -598,7 +598,7 @@ function VehicleCard({ vehicle, onReserve }) {
                     <span className="text-muted">{vehicle.insuranceCompany}</span>
                     <button
                         onClick={onReserve}
-                        disabled={vehicle.availability !== 'available'}
+                        disabled={vehicle.availability === 'inoperational'}
                         className="font-medium text-ink underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-muted-soft disabled:no-underline"
                     >
                         Reservar →
