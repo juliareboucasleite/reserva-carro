@@ -212,14 +212,51 @@ export default function LandingPage({ onGoToLogin }) {
         setActivePanel(null);
     }
 
-    function chooseLocation(panel, value) {
-        if (panel === 'pickupLocation') setPickupLocation(value);
-        if (panel === 'returnLocation') setReturnLocation(value);
+    function handleLocationInput(panel, value) {
+        if (panel === 'pickupLocation') {
+            setPickupLocation(value);
+            setPickupLocationData(null);
+        }
+
+        if (panel === 'returnLocation') {
+            setReturnLocation(value);
+            setReturnLocationData(null);
+        }
+
+        setRouteData(null);
+    }
+
+    function chooseLocation(panel, option) {
+        if (panel === 'pickupLocation') {
+            setPickupLocation(option.label);
+            setPickupLocationData(option);
+        }
+
+        if (panel === 'returnLocation') {
+            setReturnLocation(option.label);
+            setReturnLocationData(option);
+        }
+
         setActivePanel(null);
     }
 
-    function triggerSearch() {
+    async function triggerSearch() {
         setActivePanel(null);
+
+        if (pickupLocationData && returnLocationData) {
+            setRouteLoading(true);
+            try {
+                const response = await estimateRoute(pickupLocationData, returnLocationData);
+                setRouteData(response.route || null);
+            } catch (error) {
+                setRouteData(null);
+            } finally {
+                setRouteLoading(false);
+            }
+        } else {
+            setRouteData(null);
+        }
+
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -283,7 +320,9 @@ export default function LandingPage({ onGoToLogin }) {
                                 >
                                     <input
                                         value={pickupLocation}
-                                        onChange={(event) => setPickupLocation(event.target.value)}
+                                        onChange={(event) =>
+                                            handleLocationInput('pickupLocation', event.target.value)
+                                        }
                                         onFocus={() => setActivePanel('pickupLocation')}
                                         placeholder="Pesquisar destinos"
                                         className="w-full bg-transparent text-[0.95rem] font-medium text-ink outline-none placeholder:text-slate-300"
@@ -292,6 +331,7 @@ export default function LandingPage({ onGoToLogin }) {
                                 {activePanel === 'pickupLocation' && (
                                     <LocationPanel
                                         options={matchingLocations}
+                                        loading={locationLoading}
                                         onSelect={(value) => chooseLocation('pickupLocation', value)}
                                     />
                                 )}
@@ -306,7 +346,11 @@ export default function LandingPage({ onGoToLogin }) {
                                         returnLocation ? (
                                             <button
                                                 type="button"
-                                                onClick={() => setReturnLocation('')}
+                                                onClick={() => {
+                                                    setReturnLocation('');
+                                                    setReturnLocationData(null);
+                                                    setRouteData(null);
+                                                }}
                                                 className="rounded-full bg-slate-500 text-white"
                                             >
                                                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -318,7 +362,9 @@ export default function LandingPage({ onGoToLogin }) {
                                 >
                                     <input
                                         value={returnLocation}
-                                        onChange={(event) => setReturnLocation(event.target.value)}
+                                        onChange={(event) =>
+                                            handleLocationInput('returnLocation', event.target.value)
+                                        }
                                         onFocus={() => setActivePanel('returnLocation')}
                                         placeholder="Pesquisar destinos"
                                         className="w-full bg-transparent text-[0.95rem] font-medium text-ink outline-none placeholder:text-slate-300"
@@ -327,6 +373,7 @@ export default function LandingPage({ onGoToLogin }) {
                                 {activePanel === 'returnLocation' && (
                                     <LocationPanel
                                         options={matchingLocations}
+                                        loading={locationLoading}
                                         onSelect={(value) => chooseLocation('returnLocation', value)}
                                     />
                                 )}
@@ -402,7 +449,17 @@ export default function LandingPage({ onGoToLogin }) {
                         </div>
 
                         <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-                            <p>Introduza as primeiras 3 letras e aguarde pelos resultados.</p>
+                            <div>
+                                <p>Introduza as primeiras 3 letras e aguarde pelos resultados.</p>
+                                {routeLoading && (
+                                    <p className="mt-1 text-xs text-slate-400">A calcular rota...</p>
+                                )}
+                                {routeData && (
+                                    <p className="mt-1 text-xs font-medium text-slate-600">
+                                        {routeData.distance_km} km · {routeData.duration_min} min · {routeData.scope_label}
+                                    </p>
+                                )}
+                            </div>
 
                             <div className="relative self-start md:self-auto">
                                 <button
@@ -696,21 +753,30 @@ function DateTimeSlot({
     );
 }
 
-function LocationPanel({ options, onSelect }) {
+function LocationPanel({ options, loading, onSelect }) {
     return (
         <div className="absolute left-0 top-full z-30 mt-3 w-full overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-            {options.length === 0 ? (
+            {loading ? (
+                <p className="px-4 py-3 text-sm text-slate-500">A procurar localizaÃ§Ãµes...</p>
+            ) : options.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-slate-500">Sem resultados.</p>
             ) : (
                 options.map((option) => (
                     <button
-                        key={option}
+                        key={option.id}
                         type="button"
                         onClick={() => onSelect(option)}
-                        className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
+                        className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition hover:bg-slate-50"
                     >
-                        <span>{option}</span>
-                        <span className="text-xs text-slate-400">Destino</span>
+                        <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-ink">
+                                {option.label}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-slate-400">
+                                {option.type_label} · {option.city}
+                            </span>
+                        </span>
+                        <span className="shrink-0 text-xs text-slate-400">{option.type_label}</span>
                     </button>
                 ))
             )}
