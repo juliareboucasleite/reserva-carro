@@ -111,6 +111,15 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                                         >
                                             {t.common.details}
                                         </Button>
+                                        {canManage && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => setEditing(v)}
+                                            >
+                                                {t.common.edit}
+                                            </Button>
+                                        )}
                                         {v.operational && (
                                             <Button
                                                 variant="accent"
@@ -127,6 +136,19 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
                     </tbody>
                 </table>
             </div>
+
+            <VehicleFormModal
+                vehicle={editing}
+                onClose={() => setEditing(null)}
+                onSave={(payload) => {
+                    if (editing && editing.id) {
+                        updateVehicle(editing.id, payload);
+                    } else {
+                        addVehicle(payload);
+                    }
+                    setEditing(null);
+                }}
+            />
         </div>
     );
 }
@@ -134,8 +156,15 @@ export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
 export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
     const { t } = useI18n();
     const { user } = useAuth();
-    const { getVehicle, getMaintenanceFor, reservations, setVehicleOperational } = useData();
+    const {
+        getVehicle,
+        getMaintenanceFor,
+        reservations,
+        setVehicleOperational,
+        updateVehicle,
+    } = useData();
     const v = getVehicle(vehicleId);
+    const [editing, setEditing] = useState(false);
 
     if (!v) {
         return (
@@ -176,15 +205,24 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     {canManage && (
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setVehicleOperational(v.id, !v.operational)}
-                        >
-                            {v.operational
-                                ? t.vehicles.markInoperational
-                                : t.vehicles.markOperational}
-                        </Button>
+                        <>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setEditing(true)}
+                            >
+                                {t.common.edit}
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setVehicleOperational(v.id, !v.operational)}
+                            >
+                                {v.operational
+                                    ? t.vehicles.markInoperational
+                                    : t.vehicles.markOperational}
+                            </Button>
+                        </>
                     )}
                     {v.operational && (
                         <Button variant="accent" size="sm" onClick={() => onRequestReservation(v.id)}>
@@ -292,6 +330,15 @@ export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
                     </table>
                 )}
             </div>
+
+            <VehicleFormModal
+                vehicle={editing ? v : null}
+                onClose={() => setEditing(false)}
+                onSave={(payload) => {
+                    updateVehicle(v.id, payload);
+                    setEditing(false);
+                }}
+            />
 
             <div className="mt-16">
                 <h2 className="mb-5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
