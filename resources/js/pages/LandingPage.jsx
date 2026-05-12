@@ -163,14 +163,7 @@ export default function LandingPage({ onGoToLogin }) {
         };
     }, [activePanel, pickupLocation, returnLocation]);
 
-    const matchingLocations = useMemo(() => {
-        const source = activePanel === 'returnLocation' ? returnLocation : pickupLocation;
-        const query = source.trim().toLowerCase();
-
-        if (!query) return LOCATION_OPTIONS;
-
-        return LOCATION_OPTIONS.filter((item) => item.toLowerCase().includes(query));
-    }, [activePanel, pickupLocation, returnLocation]);
+    const matchingLocations = useMemo(() => locationOptions, [locationOptions]);
 
     const filtered = useMemo(() => {
         return vehicles.filter((vehicle) => {
