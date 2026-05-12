@@ -260,7 +260,7 @@ export default function LandingPage({ onGoToLogin }) {
                         ref={widgetRef}
                         className="relative z-20 mt-10 overflow-visible rounded-[28px] bg-white p-5 shadow-[0_22px_80px_rgba(15,23,42,0.22)] md:p-6"
                     >
-                        <div className="grid gap-3 lg:grid-cols-[1.45fr_1.45fr_1fr_0.72fr_1fr_0.72fr_0.9fr]">
+                        <div className="grid gap-3 lg:grid-cols-[1.35fr_1.35fr_1.3fr_1.3fr_0.85fr]">
                             <div className="relative">
                                 <SearchSlot
                                     label="Levantamento"
@@ -272,7 +272,7 @@ export default function LandingPage({ onGoToLogin }) {
                                         onChange={(event) => setPickupLocation(event.target.value)}
                                         onFocus={() => setActivePanel('pickupLocation')}
                                         placeholder="Pesquisar destinos"
-                                        className="w-full bg-transparent text-xl font-medium text-ink outline-none placeholder:text-slate-300 md:text-[1.05rem]"
+                                        className="w-full bg-transparent text-[0.95rem] font-medium text-ink outline-none placeholder:text-slate-300"
                                     />
                                 </SearchSlot>
                                 {activePanel === 'pickupLocation' && (
@@ -307,7 +307,7 @@ export default function LandingPage({ onGoToLogin }) {
                                         onChange={(event) => setReturnLocation(event.target.value)}
                                         onFocus={() => setActivePanel('returnLocation')}
                                         placeholder="Pesquisar destinos"
-                                        className="w-full bg-transparent text-xl font-medium text-ink outline-none placeholder:text-slate-300 md:text-[1.05rem]"
+                                        className="w-full bg-transparent text-[0.95rem] font-medium text-ink outline-none placeholder:text-slate-300"
                                     />
                                 </SearchSlot>
                                 {activePanel === 'returnLocation' && (
@@ -319,12 +319,16 @@ export default function LandingPage({ onGoToLogin }) {
                             </div>
 
                             <div className="relative">
-                                <FieldButton
-                                    label="Data de levantamento"
-                                    value={formatFieldDate(pickupDate)}
+                                <DateTimeSlot
                                     icon={<CalendarMiniIcon />}
-                                    active={activePanel === 'pickupDate'}
-                                    onClick={() => openDatePanel('pickupDate')}
+                                    dateLabel="Data de levantamento"
+                                    dateValue={formatFieldDate(pickupDate)}
+                                    timeLabel="Hora"
+                                    timeValue={pickupTime}
+                                    activeDate={activePanel === 'pickupDate'}
+                                    activeTime={activePanel === 'pickupTime'}
+                                    onClickDate={() => openDatePanel('pickupDate')}
+                                    onClickTime={() => setActivePanel('pickupTime')}
                                 />
                                 {activePanel === 'pickupDate' && (
                                     <CalendarPanel
@@ -336,15 +340,6 @@ export default function LandingPage({ onGoToLogin }) {
                                         onSelect={(value) => updateDate('pickupDate', value)}
                                     />
                                 )}
-                            </div>
-
-                            <div className="relative">
-                                <FieldButton
-                                    label="Hora"
-                                    value={pickupTime}
-                                    active={activePanel === 'pickupTime'}
-                                    onClick={() => setActivePanel('pickupTime')}
-                                />
                                 {activePanel === 'pickupTime' && (
                                     <TimePanel
                                         selected={pickupTime}
@@ -354,12 +349,16 @@ export default function LandingPage({ onGoToLogin }) {
                             </div>
 
                             <div className="relative">
-                                <FieldButton
-                                    label="Devolução"
-                                    value={formatFieldDate(returnDate)}
+                                <DateTimeSlot
                                     icon={<CalendarMiniIcon />}
-                                    active={activePanel === 'returnDate'}
-                                    onClick={() => openDatePanel('returnDate')}
+                                    dateLabel="Devolução"
+                                    dateValue={formatFieldDate(returnDate)}
+                                    timeLabel="Hora"
+                                    timeValue={returnTime}
+                                    activeDate={activePanel === 'returnDate'}
+                                    activeTime={activePanel === 'returnTime'}
+                                    onClickDate={() => openDatePanel('returnDate')}
+                                    onClickTime={() => setActivePanel('returnTime')}
                                 />
                                 {activePanel === 'returnDate' && (
                                     <CalendarPanel
@@ -371,15 +370,6 @@ export default function LandingPage({ onGoToLogin }) {
                                         onSelect={(value) => updateDate('returnDate', value)}
                                     />
                                 )}
-                            </div>
-
-                            <div className="relative">
-                                <FieldButton
-                                    label="Hora"
-                                    value={returnTime}
-                                    active={activePanel === 'returnTime'}
-                                    onClick={() => setActivePanel('returnTime')}
-                                />
                                 {activePanel === 'returnTime' && (
                                     <TimePanel
                                         selected={returnTime}
@@ -391,7 +381,7 @@ export default function LandingPage({ onGoToLogin }) {
                             <button
                                 type="button"
                                 onClick={triggerSearch}
-                                className="rounded-2xl bg-[#17894e] px-6 py-4 text-lg font-semibold text-white transition hover:bg-[#117241]"
+                                className="min-h-[72px] rounded-2xl bg-[#17894e] px-5 text-base font-semibold text-white transition hover:bg-[#117241]"
                             >
                                 Pesquisar
                             </button>
@@ -620,7 +610,7 @@ function VehicleCard({ vehicle, onReserve }) {
 function SearchSlot({ label, icon, children, active, trailing }) {
     return (
         <label
-            className={`flex min-h-[88px] items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
+            className={`flex min-h-[72px] items-center gap-3 rounded-2xl border bg-white px-3.5 py-2.5 shadow-sm transition ${
                 active
                     ? 'border-sky-500 ring-2 ring-sky-100'
                     : 'border-slate-200 hover:border-slate-300'
@@ -628,7 +618,7 @@ function SearchSlot({ label, icon, children, active, trailing }) {
         >
             <span className="text-slate-400">{icon}</span>
             <span className="min-w-0 flex-1">
-                <span className="block text-sm text-slate-500">{label}</span>
+                <span className="block text-xs text-slate-500">{label}</span>
                 {children}
             </span>
             {trailing && <span className="shrink-0 text-slate-400">{trailing}</span>}
@@ -636,25 +626,58 @@ function SearchSlot({ label, icon, children, active, trailing }) {
     );
 }
 
-function FieldButton({ label, value, icon, active, onClick }) {
+function DateTimeSlot({
+    icon,
+    dateLabel,
+    dateValue,
+    timeLabel,
+    timeValue,
+    activeDate,
+    activeTime,
+    onClickDate,
+    onClickTime,
+}) {
+    const anyActive = activeDate || activeTime;
+
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={`flex min-h-[88px] w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition ${
-                active
+        <div
+            className={`flex min-h-[72px] overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                anyActive
                     ? 'border-sky-500 ring-2 ring-sky-100'
                     : 'border-slate-200 hover:border-slate-300'
             }`}
         >
-            {icon && <span className="text-slate-400">{icon}</span>}
-            <span className="min-w-0">
-                <span className="block truncate text-sm text-slate-500">{label}</span>
-                <span className="mt-1 block truncate text-[1.05rem] font-medium text-ink">
-                    {value}
+            <button
+                type="button"
+                onClick={onClickDate}
+                className={`flex min-w-0 flex-1 items-center gap-3 px-3.5 py-2.5 text-left transition ${
+                    activeDate ? 'bg-sky-50/60' : 'hover:bg-slate-50'
+                }`}
+            >
+                {icon && <span className="shrink-0 text-slate-400">{icon}</span>}
+                <span className="min-w-0">
+                    <span className="block truncate text-xs text-slate-500">{dateLabel}</span>
+                    <span className="mt-0.5 block truncate text-[0.95rem] font-medium text-ink">
+                        {dateValue}
+                    </span>
                 </span>
-            </span>
-        </button>
+            </button>
+
+            <span className="w-px self-stretch bg-slate-200" />
+
+            <button
+                type="button"
+                onClick={onClickTime}
+                className={`flex w-[88px] shrink-0 flex-col justify-center px-3 py-2.5 text-left transition ${
+                    activeTime ? 'bg-sky-50/60' : 'hover:bg-slate-50'
+                }`}
+            >
+                <span className="block text-xs text-slate-500">{timeLabel}</span>
+                <span className="mt-0.5 block text-[0.95rem] font-medium text-ink">
+                    {timeValue}
+                </span>
+            </button>
+        </div>
     );
 }
 
