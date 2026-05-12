@@ -236,6 +236,15 @@ export const translations = {
             hint: 'Imagens e vídeo até 20 MB. Apagados automaticamente 30 dias após o checkout.',
             remove: 'Remover',
             empty: 'Sem ficheiros.',
+            angles: {
+                title: 'Fotos da viatura',
+                hint: 'Obrigatório: 1 foto por cada lado (frente, trás, direita, esquerda). Até 20 MB cada.',
+                front: 'Frente',
+                back: 'Trás',
+                left: 'Esquerda',
+                right: 'Direita',
+                replace: 'Substituir',
+            },
         },
         admin: {
             title: 'Administração',
@@ -487,6 +496,15 @@ export const translations = {
             hint: 'Images and video up to 20 MB. Automatically deleted 30 days after checkout.',
             remove: 'Remove',
             empty: 'No files.',
+            angles: {
+                title: 'Vehicle photos',
+                hint: 'Required: 1 photo per side (front, back, right, left). Up to 20 MB each.',
+                front: 'Front',
+                back: 'Back',
+                left: 'Left',
+                right: 'Right',
+                replace: 'Replace',
+            },
         },
         admin: {
             title: 'Administration',
