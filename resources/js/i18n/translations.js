@@ -206,6 +206,8 @@ export const translations = {
             confirmOperationalTitle: 'A viatura ficou operacional?',
             confirmOperationalSubtitle:
                 'Se selecionar "Não", a viatura é marcada como inoperacional e abre-se uma ficha de manutenção.',
+            startMediaLabel: 'Fotos / vídeo de check-in',
+            endMediaLabel: 'Fotos / vídeo de checkout',
         },
         maintenance: {
             title: 'Manutenção',
@@ -455,6 +457,8 @@ export const translations = {
             confirmOperationalTitle: 'Did the vehicle remain operational?',
             confirmOperationalSubtitle:
                 'If you choose "No", the vehicle is marked out of service and a maintenance record is opened.',
+            startMediaLabel: 'Check-in photos / video',
+            endMediaLabel: 'Checkout photos / video',
         },
         maintenance: {
             title: 'Maintenance',
