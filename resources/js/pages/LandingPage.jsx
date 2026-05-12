@@ -893,3 +893,159 @@ function ChevronRightIcon() {
         </svg>
     );
 }
+
+const FOOTER_COLUMNS_PT = [
+    {
+        title: 'Reservas',
+        links: [
+            'Tarifas e condições',
+            'Frota disponível',
+            'Bases de levantamento',
+            'Aeroportos de levantamento',
+            'Programa de fidelidade',
+            'Promoções internas',
+            'Aplicação móvel',
+            'Notícias da frota',
+        ],
+    },
+    {
+        title: 'Gestão de frota',
+        links: ['Adicionar viatura', 'Pedidos de manutenção'],
+    },
+    {
+        title: 'Parceiros',
+        links: ['Programa de parceria'],
+    },
+    {
+        title: 'Sobre',
+        links: [
+            'Quem somos',
+            'Política de privacidade',
+            'Política de cookies',
+            'Termos e condições',
+            'Código de conduta',
+            'Carreiras',
+        ],
+    },
+    {
+        title: 'Apoio',
+        links: [
+            { label: 'Iniciar sessão ou criar conta', isLogin: true },
+            'Gerir reserva',
+            'Centro de ajuda',
+            'Perguntas frequentes',
+            'Requisitos de utilização',
+        ],
+    },
+];
+
+const FOOTER_COLUMNS_EN = [
+    {
+        title: 'Bookings',
+        links: [
+            'Pricing & conditions',
+            'Available fleet',
+            'Pickup bases',
+            'Pickup airports',
+            'Loyalty program',
+            'Internal promotions',
+            'Mobile app',
+            'Fleet news',
+        ],
+    },
+    {
+        title: 'Fleet management',
+        links: ['Add vehicle', 'Maintenance requests'],
+    },
+    {
+        title: 'Partners',
+        links: ['Partnership program'],
+    },
+    {
+        title: 'About',
+        links: [
+            'About us',
+            'Privacy policy',
+            'Cookie policy',
+            'Terms & conditions',
+            'Code of conduct',
+            'Careers',
+        ],
+    },
+    {
+        title: 'Support',
+        links: [
+            { label: 'Sign in or create account', isLogin: true },
+            'Manage booking',
+            'Help centre',
+            'FAQ',
+            'Usage requirements',
+        ],
+    },
+];
+
+function SiteFooter({ t, lang, setLang, onGoToLogin }) {
+    const columns = lang === 'en' ? FOOTER_COLUMNS_EN : FOOTER_COLUMNS_PT;
+
+    return (
+        <footer id="contact" className="border-t border-border bg-paper">
+            <div className="mx-auto max-w-7xl px-6 py-12">
+                <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+                    {columns.map((column) => (
+                        <div key={column.title}>
+                            <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink">
+                                {column.title}
+                            </h3>
+                            <ul className="mt-4 space-y-2.5">
+                                {column.links.map((link) => {
+                                    const item = typeof link === 'string' ? { label: link } : link;
+                                    const className =
+                                        'text-sm text-muted transition hover:text-ink';
+
+                                    if (item.isLogin) {
+                                        return (
+                                            <li key={item.label}>
+                                                <button
+                                                    type="button"
+                                                    onClick={onGoToLogin}
+                                                    className={className}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            </li>
+                                        );
+                                    }
+
+                                    return (
+                                        <li key={item.label}>
+                                            <a href="#" className={className}>
+                                                {item.label}
+                                            </a>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-12 flex flex-col items-start gap-4 border-t border-border-soft pt-6 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-ink text-paper">
+                            <CarIcon className="h-4 w-4" />
+                        </span>
+                        <p className="text-xs text-muted">{t.landing.footerTagline}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs text-muted">
+                        <LangSwitch lang={lang} setLang={setLang} />
+                        <span className="hidden text-border md:inline">·</span>
+                        <p>
+                            © {new Date().getFullYear()}. {t.landing.footerRights}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    );
+}
