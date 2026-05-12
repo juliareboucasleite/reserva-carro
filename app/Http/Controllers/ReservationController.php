@@ -83,8 +83,11 @@ class ReservationController extends Controller
             'driver' => ['required', 'string', 'max:255'],
             'start_km' => ['required', 'integer', 'min:0'],
             'start_notes' => ['nullable', 'string'],
-            'media' => ['nullable', 'array'],
-            'media.*' => ['file', 'mimetypes:image/*,video/*', 'max:20480'],
+            'media' => ['required', 'array'],
+            'media.front' => ['required', 'file', 'image', 'max:20480'],
+            'media.back' => ['required', 'file', 'image', 'max:20480'],
+            'media.left' => ['required', 'file', 'image', 'max:20480'],
+            'media.right' => ['required', 'file', 'image', 'max:20480'],
         ]);
 
         $reservation->update([
@@ -94,7 +97,7 @@ class ReservationController extends Controller
             'status' => Reservation::STATUS_CHECKED_IN,
         ]);
 
-        $this->storeUploads($request, $reservation, 'start');
+        $this->storeAngledUploads($request, $reservation, 'start');
 
         return response()->json($this->fresh($reservation));
     }
@@ -162,6 +165,24 @@ class ReservationController extends Controller
             $path = $file->store('reservation-media/' . $reservation->id, 'public');
             $reservation->media()->create([
                 'phase' => $phase,
+                'path' => $path,
+                'mime' => $file->getMimeType(),
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+            ]);
+        }
+    }
+
+    private function storeAngledUploads(Request $request, Reservation $reservation, string $phase): void
+    {
+        $angles = ['front', 'back', 'left', 'right'];
+        foreach ($angles as $angle) {
+            $file = $request->file("media.$angle");
+            if (! $file) continue;
+            $path = $file->store('reservation-media/' . $reservation->id, 'public');
+            $reservation->media()->create([
+                'phase' => $phase,
+                'angle' => $angle,
                 'path' => $path,
                 'mime' => $file->getMimeType(),
                 'original_name' => $file->getClientOriginalName(),
