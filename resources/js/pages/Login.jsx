@@ -302,7 +302,10 @@ function LoginCard({ copy, form, setForm, onSubmit, onSwitch, error, pending }) 
 
 function RegisterCard({ copy, form, update, onSubmit, onSwitch, error, pending, countryOptions }) {
     return (
-        <div className="mx-auto w-full max-w-[560px] rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+        <div
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-[560px] rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]"
+        >
             <div className="flex items-center justify-between border-b border-slate-200 px-7 py-5">
                 <h2 className="text-xl font-semibold tracking-tight text-ink">
                     {copy.registerTitle}
