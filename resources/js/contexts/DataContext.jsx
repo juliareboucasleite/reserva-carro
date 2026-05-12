@@ -1,148 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import fordTransitImg from '../../img/carros/ford-transit.webp';
-import vwTransporterImg from '../../img/carros/vw-transporter.webp';
-import mitsubishiL400Img from '../../img/carros/mitsubishi-l400.webp';
-import opelVivaroImg from '../../img/carros/opel-vivaro.webp';
-import opelBenficaImg from '../../img/carros/opel-benfica.webp';
-import marcopoloIvecoImg from '../../img/carros/marcopolo-iveco.webp';
-import manBusImg from '../../img/carros/man-bus.webp';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext(null);
 
-const mkVehicle = (v) => ({ ...v, name: `${v.brand} ${v.model}` });
-
-const INITIAL_VEHICLES = [
-    mkVehicle({
-        id: 1,
-        brand: 'Ford',
-        model: 'Trânsit',
-        category: 'van',
-        image: fordTransitImg,
-        plate: '12-AB-34',
-        seats: 9,
-        currentKm: 84210,
-        operational: true,
-        nextInspection: '2026-08-12',
-        insuranceCompany: 'Fidelidade',
-        insuranceType: 'Todos os riscos',
-        insuranceRenewal: '2026-11-30',
-        responsible: 'João Tavares',
-        phone: '+351 912 345 678',
-        base: 'Lisboa',
-    }),
-    mkVehicle({
-        id: 2,
-        brand: 'VW',
-        model: 'Transporter',
-        category: 'van',
-        image: vwTransporterImg,
-        plate: '45-CD-67',
-        seats: 8,
-        currentKm: 122540,
-        operational: true,
-        nextInspection: '2026-06-02',
-        insuranceCompany: 'Tranquilidade',
-        insuranceType: 'Danos próprios',
-        insuranceRenewal: '2026-07-15',
-        responsible: 'Sofia Antunes',
-        phone: '+351 913 998 712',
-        base: 'Lisboa',
-    }),
-    mkVehicle({
-        id: 3,
-        brand: 'Mitsubishi',
-        model: 'L400',
-        category: 'van',
-        image: mitsubishiL400Img,
-        plate: '78-EF-90',
-        seats: 6,
-        currentKm: 198320,
-        operational: false,
-        nextInspection: '2026-05-20',
-        insuranceCompany: 'Ageas',
-        insuranceType: 'Responsabilidade civil',
-        insuranceRenewal: '2026-12-01',
-        responsible: 'Manuel Costa',
-        phone: '+351 916 221 045',
-        base: 'Porto',
-    }),
-    mkVehicle({
-        id: 4,
-        brand: 'Opel',
-        model: 'Vivaro',
-        category: 'van',
-        image: opelVivaroImg,
-        plate: '11-GH-22',
-        seats: 9,
-        currentKm: 56770,
-        operational: true,
-        nextInspection: '2026-09-04',
-        insuranceCompany: 'Allianz',
-        insuranceType: 'Todos os riscos',
-        insuranceRenewal: '2027-01-10',
-        responsible: 'Rita Lopes',
-        phone: '+351 917 553 380',
-        base: 'Lisboa',
-    }),
-    mkVehicle({
-        id: 5,
-        brand: 'Opel',
-        model: 'Benfica',
-        category: 'car',
-        image: opelBenficaImg,
-        plate: '33-IJ-44',
-        seats: 5,
-        currentKm: 32100,
-        operational: true,
-        nextInspection: '2026-10-18',
-        insuranceCompany: 'Fidelidade',
-        insuranceType: 'Danos próprios',
-        insuranceRenewal: '2026-08-22',
-        responsible: 'Pedro Marques',
-        phone: '+351 919 042 116',
-        base: 'Faro',
-    }),
-    mkVehicle({
-        id: 6,
-        brand: 'Autocarro',
-        model: 'Marcopolo Iveco',
-        category: 'bus',
-        image: marcopoloIvecoImg,
-        plate: '55-KL-66',
-        seats: 55,
-        currentKm: 412000,
-        operational: true,
-        nextInspection: '2026-05-25',
-        insuranceCompany: 'Tranquilidade',
-        insuranceType: 'Todos os riscos',
-        insuranceRenewal: '2026-09-30',
-        responsible: 'Carlos Ferreira',
-        phone: '+351 918 776 200',
-        base: 'Porto',
-    }),
-    mkVehicle({
-        id: 7,
-        brand: 'Autocarro',
-        model: 'MAN',
-        category: 'bus',
-        image: manBusImg,
-        plate: '77-MN-88',
-        seats: 49,
-        currentKm: 305880,
-        operational: true,
-        nextInspection: '2026-07-10',
-        insuranceCompany: 'Ageas',
-        insuranceType: 'Todos os riscos',
-        insuranceRenewal: '2026-10-05',
-        responsible: 'Inês Moreira',
-        phone: '+351 914 318 905',
-        base: 'Lisboa',
-    }),
-];
-
-const INITIAL_MAINTENANCE = [];
-
-const RES_STATUS = {
+export const RES_STATUS = {
     PENDING: 'pending',
     APPROVED: 'approved',
     REJECTED: 'rejected',
@@ -150,317 +12,312 @@ const RES_STATUS = {
     CHECKED_OUT: 'checked_out',
 };
 
-const INITIAL_RESERVATIONS = [];
-
-export const NOTIFICATION_TYPES = {
-    RESERVATION_REQUESTED: 'reservation_requested',
-    RESERVATION_APPROVED: 'reservation_approved',
-    RESERVATION_REJECTED: 'reservation_rejected',
-    RESERVATION_CHECKED_OUT: 'reservation_checked_out',
-    OPERATIONAL_CONFIRMATION_NEEDED: 'operational_confirmation_needed',
-    VEHICLE_NON_OPERATIONAL: 'vehicle_non_operational',
-    INSPECTION_DUE: 'inspection_due',
-    INSURANCE_DUE: 'insurance_due',
-};
-
-export function filterNotificationsFor(notifications, user) {
-    if (!user) return [];
-    return notifications.filter((n) => {
-        if (n.forUserId !== undefined) return n.forUserId === user.id;
-        if (n.forRoles) return n.forRoles.includes(user.role);
-        return true;
-    });
+function mapVehicle(v) {
+    return {
+        id: v.id,
+        brand: v.brand,
+        model: v.model,
+        name: v.name || `${v.brand} ${v.model}`,
+        category: v.category,
+        image: v.image,
+        plate: v.plate,
+        seats: v.seats,
+        currentKm: v.current_km,
+        operational: !!v.operational,
+        nextInspection: v.next_inspection,
+        insuranceCompany: v.insurance_company,
+        insuranceType: v.insurance_type,
+        insuranceRenewal: v.insurance_renewal,
+        responsible: v.responsible,
+        phone: v.phone,
+        base: v.base,
+    };
 }
 
-function daysBetween(dateStr) {
-    if (!dateStr) return null;
-    const target = new Date(dateStr);
-    if (Number.isNaN(target.getTime())) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    target.setHours(0, 0, 0, 0);
-    return Math.round((target - today) / 86400000);
+function vehicleToApi(v) {
+    return {
+        brand: v.brand,
+        model: v.model,
+        category: v.category,
+        image: v.image,
+        plate: v.plate,
+        seats: Number(v.seats) || 0,
+        current_km: Number(v.currentKm) || 0,
+        operational: v.operational ?? true,
+        next_inspection: v.nextInspection || null,
+        insurance_company: v.insuranceCompany || null,
+        insurance_type: v.insuranceType || null,
+        insurance_renewal: v.insuranceRenewal || null,
+        responsible: v.responsible || null,
+        phone: v.phone || null,
+        base: v.base || null,
+    };
 }
 
-const MEDIA_TTL_DAYS = 30;
-
-function purgeOldMedia(reservations) {
-    const cutoff = Date.now() - MEDIA_TTL_DAYS * 86400000;
-    let changed = false;
-    const next = reservations.map((r) => {
-        if (r.status !== RES_STATUS.CHECKED_OUT) return r;
-        const filterRecent = (list) =>
-            (list || []).filter((media) => (media.createdAt || 0) >= cutoff);
-        const startMedia = filterRecent(r.startMedia);
-        const endMedia = filterRecent(r.endMedia);
-        if (startMedia.length !== (r.startMedia || []).length || endMedia.length !== (r.endMedia || []).length) {
-            changed = true;
-            return { ...r, startMedia, endMedia };
-        }
-        return r;
-    });
-    return changed ? next : reservations;
+function mapReservationMedia(m) {
+    return {
+        id: m.id,
+        dataUrl: m.url,
+        name: m.original_name,
+        type: m.mime,
+        size: m.size,
+        createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+    };
 }
 
-export { RES_STATUS };
+function mapReservation(r) {
+    const startMedia = (r.media || []).filter((m) => m.phase === 'start').map(mapReservationMedia);
+    const endMedia = (r.media || []).filter((m) => m.phase === 'end').map(mapReservationMedia);
+
+    return {
+        id: r.id,
+        vehicleId: r.vehicle_id,
+        vehicle: r.vehicle ? mapVehicle(r.vehicle) : null,
+        requestedBy: r.requested_by,
+        requestedByName: r.requester?.name || '',
+        team: r.team,
+        trip: r.trip,
+        date: r.date,
+        status: r.status,
+        driver: r.driver,
+        startKm: r.start_km,
+        endKm: r.end_km,
+        startNotes: r.start_notes || '',
+        endNotes: r.end_notes || '',
+        operationalConfirmed: r.operational_confirmed,
+        startMedia,
+        endMedia,
+    };
+}
+
+function mapMaintenance(m) {
+    return {
+        id: m.id,
+        vehicleId: m.vehicle_id,
+        date: m.date,
+        type: m.type,
+        downtimeDays: m.downtime_days,
+        notes: m.notes || '',
+        cost: Number(m.cost) || 0,
+    };
+}
+
+function mapNotification(n) {
+    return {
+        id: n.id,
+        type: n.type,
+        message: n.message,
+        vehicleId: n.vehicle_id,
+        reservationId: n.reservation_id,
+        createdAt: n.created_at,
+        read: n.read,
+        kind: n.kind,
+    };
+}
 
 export function DataProvider({ children }) {
-    const [vehicles, setVehicles] = useState(INITIAL_VEHICLES);
-    const [maintenance, setMaintenance] = useState(INITIAL_MAINTENANCE);
-    const [reservations, setReservations] = useState(INITIAL_RESERVATIONS);
-    const [events, setEvents] = useState([]);
-    const [readNotificationIds, setReadNotificationIds] = useState(new Set());
+    const { isAuthenticated, user } = useAuth();
+    const [vehicles, setVehicles] = useState([]);
+    const [reservations, setReservations] = useState([]);
+    const [maintenance, setMaintenance] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchAll = useCallback(async () => {
+        if (!isAuthenticated) return;
+        setLoading(true);
+        try {
+            const [v, r, m, n] = await Promise.all([
+                axios.get('/api/vehicles'),
+                axios.get('/api/reservations'),
+                axios.get('/api/maintenance'),
+                axios.get('/api/notifications'),
+            ]);
+            setVehicles(v.data.map(mapVehicle));
+            setReservations(r.data.map(mapReservation));
+            setMaintenance(m.data.map(mapMaintenance));
+            setNotifications(n.data.map(mapNotification));
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated]);
+
+    const fetchNotifications = useCallback(async () => {
+        if (!isAuthenticated) return;
+        const { data } = await axios.get('/api/notifications');
+        setNotifications(data.map(mapNotification));
+    }, [isAuthenticated]);
 
     useEffect(() => {
-        setReservations((prev) => purgeOldMedia(prev));
-        const interval = window.setInterval(() => {
-            setReservations((prev) => purgeOldMedia(prev));
-        }, 60 * 60 * 1000);
+        if (isAuthenticated) {
+            fetchAll();
+        } else {
+            setVehicles([]);
+            setReservations([]);
+            setMaintenance([]);
+            setNotifications([]);
+        }
+    }, [isAuthenticated, fetchAll]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const interval = window.setInterval(fetchNotifications, 30000);
         return () => window.clearInterval(interval);
-    }, []);
+    }, [isAuthenticated, fetchNotifications]);
 
-    const pushEvent = (event) => {
-        setEvents((prev) => [
-            ...prev,
-            {
-                id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                createdAt: Date.now(),
-                ...event,
-            },
-        ]);
+    const addVehicle = async (payload) => {
+        const { data } = await axios.post('/api/vehicles', vehicleToApi(payload));
+        setVehicles((prev) => [...prev, mapVehicle(data)]);
     };
 
-    const addReservation = (res) => {
-        const id = reservations.length ? Math.max(...reservations.map((r) => r.id)) + 1 : 1;
-        const created = {
-            ...res,
-            id,
-            startMedia: res.startMedia || [],
-            endMedia: res.endMedia || [],
-            operationalConfirmed: null,
-        };
-        setReservations((prev) => [...prev, created]);
-        const vehicle = vehicles.find((v) => v.id === created.vehicleId);
-        pushEvent({
-            type: NOTIFICATION_TYPES.RESERVATION_REQUESTED,
-            reservationId: id,
-            vehicleId: created.vehicleId,
-            forRoles: ['manager', 'admin'],
-            message: `${created.requestedByName} pediu reserva da viatura ${vehicle?.name || ''} (${created.trip})`,
+    const updateVehicle = async (id, payload) => {
+        const { data } = await axios.patch(`/api/vehicles/${id}`, vehicleToApi(payload));
+        setVehicles((prev) => prev.map((v) => (v.id === id ? mapVehicle(data) : v)));
+    };
+
+    const setVehicleOperational = async (id, operational) => {
+        const { data } = await axios.post(`/api/vehicles/${id}/operational`, { operational });
+        setVehicles((prev) => prev.map((v) => (v.id === id ? mapVehicle(data) : v)));
+        fetchNotifications();
+    };
+
+    const updateVehicleKm = (id, km) => {
+        setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, currentKm: km } : v)));
+    };
+
+    const addReservation = async (payload) => {
+        const { data } = await axios.post('/api/reservations', {
+            vehicle_id: payload.vehicleId,
+            trip: payload.trip,
+            date: payload.date,
         });
+        setReservations((prev) => [mapReservation(data), ...prev]);
+        fetchNotifications();
     };
 
-    const updateReservation = (id, patch) => {
-        const current = reservations.find((r) => r.id === id);
-        const beforeStatus = current?.status;
-
-        setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-
-        if (!current) return;
-        const after = { ...current, ...patch };
-        const vehicle = vehicles.find((v) => v.id === after.vehicleId);
-
-        if (
-            beforeStatus !== RES_STATUS.APPROVED &&
-            patch.status === RES_STATUS.APPROVED
-        ) {
-            pushEvent({
-                type: NOTIFICATION_TYPES.RESERVATION_APPROVED,
-                reservationId: id,
-                vehicleId: after.vehicleId,
-                forUserId: after.requestedBy,
-                message: `Reserva aprovada: ${vehicle?.name || ''} (${after.trip}) — pronta para check-in`,
-            });
-        }
-
-        if (
-            beforeStatus !== RES_STATUS.REJECTED &&
-            patch.status === RES_STATUS.REJECTED
-        ) {
-            pushEvent({
-                type: NOTIFICATION_TYPES.RESERVATION_REJECTED,
-                reservationId: id,
-                vehicleId: after.vehicleId,
-                forUserId: after.requestedBy,
-                message: `Reserva rejeitada: ${vehicle?.name || ''} (${after.trip})`,
-            });
-        }
-
-        if (
-            beforeStatus !== RES_STATUS.CHECKED_OUT &&
-            patch.status === RES_STATUS.CHECKED_OUT
-        ) {
-            pushEvent({
-                type: NOTIFICATION_TYPES.RESERVATION_CHECKED_OUT,
-                reservationId: id,
-                vehicleId: after.vehicleId,
-                forRoles: ['manager', 'admin'],
-                message: `Reserva fechada: ${vehicle?.name || ''} — ${after.endKm?.toLocaleString('pt-PT') || '?'} km`,
-            });
-            pushEvent({
-                type: NOTIFICATION_TYPES.OPERATIONAL_CONFIRMATION_NEEDED,
-                reservationId: id,
-                vehicleId: after.vehicleId,
-                forRoles: ['manager', 'admin'],
-                message: `Confirmar estado operacional: ${vehicle?.name || ''} (${vehicle?.plate || ''})`,
-            });
-        }
+    const approveReservation = async (id) => {
+        const { data } = await axios.post(`/api/reservations/${id}/approve`);
+        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        fetchNotifications();
     };
 
-    const addMaintenance = (m) => {
-        setMaintenance((prev) => [
-            ...prev,
-            { ...m, id: prev.length ? Math.max(...prev.map((x) => x.id)) + 1 : 1 },
-        ]);
+    const rejectReservation = async (id) => {
+        const { data } = await axios.post(`/api/reservations/${id}/reject`);
+        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        fetchNotifications();
     };
 
-    const setVehicleOperational = (vehicleId, operational) => {
-        setVehicles((prev) =>
-            prev.map((v) => (v.id === vehicleId ? { ...v, operational } : v))
-        );
+    const checkInReservation = async (id, { driver, startKm, startNotes, files }) => {
+        const fd = new FormData();
+        fd.append('driver', driver);
+        fd.append('start_km', String(startKm));
+        if (startNotes) fd.append('start_notes', startNotes);
+        (files || []).forEach((file) => fd.append('media[]', file));
 
+        const { data } = await axios.post(`/api/reservations/${id}/checkin`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+    };
+
+    const checkOutReservation = async (id, { endKm, endNotes, files }) => {
+        const fd = new FormData();
+        fd.append('end_km', String(endKm));
+        if (endNotes) fd.append('end_notes', endNotes);
+        (files || []).forEach((file) => fd.append('media[]', file));
+
+        const { data } = await axios.post(`/api/reservations/${id}/checkout`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        if (data.end_km) {
+            setVehicles((prev) =>
+                prev.map((v) => (v.id === data.vehicle_id ? { ...v, currentKm: data.end_km } : v))
+            );
+        }
+        fetchNotifications();
+    };
+
+    const confirmReservationOperational = async (id, operational) => {
+        const { data } = await axios.post(`/api/reservations/${id}/confirm-operational`, {
+            operational,
+        });
+        setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
         if (!operational) {
-            const vehicle = vehicles.find((v) => v.id === vehicleId);
-            pushEvent({
-                type: NOTIFICATION_TYPES.VEHICLE_NON_OPERATIONAL,
-                vehicleId,
-                forRoles: ['manager', 'admin'],
-                message: `Viatura ${vehicle?.name || ''} (${vehicle?.plate || ''}) marcada como não operacional`,
-            });
+            setVehicles((prev) =>
+                prev.map((v) => (v.id === data.vehicle_id ? { ...v, operational: false } : v))
+            );
         }
+        fetchNotifications();
     };
 
-    const updateVehicleKm = (vehicleId, km) => {
-        setVehicles((prev) =>
-            prev.map((v) => (v.id === vehicleId ? { ...v, currentKm: km } : v))
-        );
-    };
-
-    const addVehicle = (payload) => {
-        setVehicles((prev) => {
-            const id = prev.length ? Math.max(...prev.map((v) => v.id)) + 1 : 1;
-            const created = {
-                ...payload,
-                id,
-                name: `${payload.brand} ${payload.model}`,
-                operational: payload.operational ?? true,
-                currentKm: Number(payload.currentKm) || 0,
-                seats: Number(payload.seats) || 0,
-            };
-            return [...prev, created];
+    const addMaintenance = async (payload) => {
+        const { data } = await axios.post('/api/maintenance', {
+            vehicle_id: payload.vehicleId,
+            date: payload.date,
+            type: payload.type,
+            downtime_days: Number(payload.downtimeDays) || 0,
+            notes: payload.notes || '',
+            cost: Number(payload.cost) || 0,
         });
+        setMaintenance((prev) => [mapMaintenance(data), ...prev]);
     };
 
-    const updateVehicle = (vehicleId, patch) => {
-        setVehicles((prev) =>
-            prev.map((v) => {
-                if (v.id !== vehicleId) return v;
-                const merged = { ...v, ...patch };
-                if (patch.brand || patch.model) {
-                    merged.name = `${merged.brand} ${merged.model}`;
-                }
-                if (patch.currentKm !== undefined) merged.currentKm = Number(patch.currentKm) || 0;
-                if (patch.seats !== undefined) merged.seats = Number(patch.seats) || 0;
-                return merged;
-            })
-        );
+    const markNotificationRead = async (id) => {
+        if (typeof id === 'string' && !id.startsWith('evt-')) return;
+        const numeric = typeof id === 'string' ? Number(id.replace('evt-', '')) : id;
+        await axios.post(`/api/notifications/${numeric}/read`);
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    };
+
+    const markAllNotificationsRead = async () => {
+        await axios.post('/api/notifications/read-all');
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     };
 
     const getVehicle = (id) => vehicles.find((v) => v.id === id);
-    const getMaintenanceFor = (vehicleId) =>
-        maintenance.filter((m) => m.vehicleId === vehicleId);
-
-    const notifications = useMemo(() => {
-        const derived = [];
-
-        vehicles.forEach((v) => {
-            const inspDays = daysBetween(v.nextInspection);
-            if (inspDays !== null && inspDays <= 30) {
-                derived.push({
-                    id: `insp-${v.id}-${v.nextInspection}`,
-                    type: NOTIFICATION_TYPES.INSPECTION_DUE,
-                    vehicleId: v.id,
-                    createdAt: Date.now(),
-                    days: inspDays,
-                    forRoles: ['manager', 'admin'],
-                    message:
-                        inspDays < 0
-                            ? `Inspeção vencida: ${v.name} (${v.plate})`
-                            : inspDays === 0
-                            ? `Inspeção hoje: ${v.name} (${v.plate})`
-                            : `Inspeção em ${inspDays} dia${inspDays === 1 ? '' : 's'}: ${v.name} (${v.plate})`,
-                });
-            }
-
-            const insDays = daysBetween(v.insuranceRenewal);
-            if (insDays !== null && insDays <= 30) {
-                derived.push({
-                    id: `ins-${v.id}-${v.insuranceRenewal}`,
-                    type: NOTIFICATION_TYPES.INSURANCE_DUE,
-                    vehicleId: v.id,
-                    createdAt: Date.now(),
-                    days: insDays,
-                    forRoles: ['manager', 'admin'],
-                    message:
-                        insDays < 0
-                            ? `Renovação de seguro vencida: ${v.name} (${v.plate})`
-                            : insDays === 0
-                            ? `Seguro renova hoje: ${v.name} (${v.plate})`
-                            : `Renovação de seguro em ${insDays} dia${insDays === 1 ? '' : 's'}: ${v.name} (${v.plate})`,
-                });
-            }
-        });
-
-        const all = [...events, ...derived].map((n) => ({
-            ...n,
-            read: readNotificationIds.has(n.id),
-        }));
-
-        return all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    }, [vehicles, events, readNotificationIds]);
+    const getMaintenanceFor = (vehicleId) => maintenance.filter((m) => m.vehicleId === vehicleId);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
-    const markNotificationRead = (id) => {
-        setReadNotificationIds((prev) => {
-            const next = new Set(prev);
-            next.add(id);
-            return next;
-        });
-    };
-
-    const markAllNotificationsRead = () => {
-        setReadNotificationIds(new Set(notifications.map((n) => n.id)));
-    };
-
-    return (
-        <DataContext.Provider
-            value={{
-                vehicles,
-                maintenance,
-                reservations,
-                addReservation,
-                updateReservation,
-                addMaintenance,
-                setVehicleOperational,
-                updateVehicleKm,
-                addVehicle,
-                updateVehicle,
-                getVehicle,
-                getMaintenanceFor,
-                notifications,
-                unreadCount,
-                markNotificationRead,
-                markAllNotificationsRead,
-            }}
-        >
-            {children}
-        </DataContext.Provider>
+    const value = useMemo(
+        () => ({
+            vehicles,
+            reservations,
+            maintenance,
+            notifications,
+            unreadCount,
+            loading,
+            refresh: fetchAll,
+            addVehicle,
+            updateVehicle,
+            setVehicleOperational,
+            updateVehicleKm,
+            addReservation,
+            approveReservation,
+            rejectReservation,
+            checkInReservation,
+            checkOutReservation,
+            confirmReservationOperational,
+            addMaintenance,
+            markNotificationRead,
+            markAllNotificationsRead,
+            getVehicle,
+            getMaintenanceFor,
+        }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [vehicles, reservations, maintenance, notifications, unreadCount, loading]
     );
+
+    return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
 export function useData() {
     const ctx = useContext(DataContext);
     if (!ctx) throw new Error('useData must be used inside DataProvider');
     return ctx;
+}
+
+export function filterNotificationsFor(notifications) {
+    return notifications || [];
 }
