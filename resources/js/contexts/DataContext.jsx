@@ -113,6 +113,31 @@ function mapMaintenance(m) {
     };
 }
 
+function mapDamage(d) {
+    return {
+        id: d.id,
+        reservationId: d.reservation_id,
+        reservation: d.reservation
+            ? {
+                  id: d.reservation.id,
+                  requestedByName: d.reservation.requester?.name || '',
+                  vehicle: d.reservation.vehicle ? mapVehicle(d.reservation.vehicle) : null,
+              }
+            : null,
+        x: Number(d.x) || 0,
+        y: Number(d.y) || 0,
+        damageType: d.damage_type,
+        severity: d.severity,
+        description: d.description || '',
+        photoUrl: d.photo_url || null,
+        cost: d.cost !== null && d.cost !== undefined ? Number(d.cost) : null,
+        responseMessage: d.response_message || '',
+        costSetAt: d.cost_set_at || null,
+        costSetterName: d.cost_setter?.name || '',
+        createdAt: d.created_at || null,
+    };
+}
+
 function mapNotification(n) {
     return {
         id: n.id,
@@ -131,6 +156,7 @@ export function DataProvider({ children }) {
     const [vehicles, setVehicles] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [maintenance, setMaintenance] = useState([]);
+    const [damages, setDamages] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -144,17 +170,20 @@ export function DataProvider({ children }) {
         try {
             await fetchVehicles();
             if (isAuthenticated) {
-                const [r, m, n] = await Promise.all([
+                const [r, m, d, n] = await Promise.all([
                     axios.get('/api/reservations'),
                     axios.get('/api/maintenance'),
+                    axios.get('/api/damages'),
                     axios.get('/api/notifications'),
                 ]);
                 setReservations(r.data.map(mapReservation));
                 setMaintenance(m.data.map(mapMaintenance));
+                setDamages(d.data.map(mapDamage));
                 setNotifications(n.data.map(mapNotification));
             } else {
                 setReservations([]);
                 setMaintenance([]);
+                setDamages([]);
                 setNotifications([]);
             }
         } finally {
@@ -241,7 +270,7 @@ export function DataProvider({ children }) {
         fetchVehicles();
     };
 
-    const checkOutReservation = async (id, { endKm, endNotes, files }) => {
+    const checkOutReservation = async (id, { endKm, endNotes, files, damages: reportedDamages = [] }) => {
         const fd = new FormData();
         fd.append('end_km', String(endKm));
         if (endNotes) fd.append('end_notes', endNotes);
@@ -251,8 +280,22 @@ export function DataProvider({ children }) {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         setReservations((prev) => prev.map((r) => (r.id === id ? mapReservation(data) : r)));
+        const uploadedDamages = [];
+        for (const damage of reportedDamages) {
+            uploadedDamages.push(
+                await reportReservationDamage(id, {
+                    x: damage.x,
+                    y: damage.y,
+                    damageType: damage.damage_type || damage.damageType,
+                    severity: damage.severity,
+                    description: damage.description,
+                    photoFile: damage.photoFile || null,
+                })
+            );
+        }
         fetchVehicles();
         fetchNotifications();
+        return { reservation: mapReservation(data), damages: uploadedDamages };
     };
 
     const confirmReservationOperational = async (id, operational) => {
@@ -276,6 +319,37 @@ export function DataProvider({ children }) {
         setMaintenance((prev) => [mapMaintenance(data), ...prev]);
     };
 
+    const reportReservationDamage = async (reservationId, payload) => {
+        const fd = new FormData();
+        fd.append('x', String(payload.x));
+        fd.append('y', String(payload.y));
+        fd.append('damage_type', payload.damageType);
+        fd.append('severity', payload.severity);
+        if (payload.description) fd.append('description', payload.description);
+        if (payload.photoFile) fd.append('photo', payload.photoFile);
+
+        const { data } = await axios.post(
+            `/api/reservations/${reservationId}/damages`,
+            fd,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+
+        const mapped = mapDamage(data);
+        setDamages((prev) => [mapped, ...prev]);
+        return mapped;
+    };
+
+    const setDamageCost = async (damageId, { cost, responseMessage }) => {
+        const { data } = await axios.patch(`/api/damages/${damageId}/cost`, {
+            cost,
+            response_message: responseMessage || '',
+        });
+
+        const mapped = mapDamage(data);
+        setDamages((prev) => prev.map((d) => (d.id === damageId ? mapped : d)));
+        return mapped;
+    };
+
     const markNotificationRead = async (id) => {
         if (typeof id === 'string' && !id.startsWith('evt-')) return;
         const numeric = typeof id === 'string' ? Number(id.replace('evt-', '')) : id;
@@ -290,6 +364,8 @@ export function DataProvider({ children }) {
 
     const getVehicle = (id) => vehicles.find((v) => v.id === id);
     const getMaintenanceFor = (vehicleId) => maintenance.filter((m) => m.vehicleId === vehicleId);
+    const getDamagesForReservation = (reservationId) =>
+        damages.filter((d) => d.reservationId === reservationId);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -298,6 +374,7 @@ export function DataProvider({ children }) {
             vehicles,
             reservations,
             maintenance,
+            damages,
             notifications,
             unreadCount,
             loading,
@@ -313,13 +390,16 @@ export function DataProvider({ children }) {
             checkOutReservation,
             confirmReservationOperational,
             addMaintenance,
+            reportReservationDamage,
+            setDamageCost,
             markNotificationRead,
             markAllNotificationsRead,
             getVehicle,
             getMaintenanceFor,
+            getDamagesForReservation,
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [vehicles, reservations, maintenance, notifications, unreadCount, loading]
+        [vehicles, reservations, maintenance, damages, notifications, unreadCount, loading]
     );
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
