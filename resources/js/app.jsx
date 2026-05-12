@@ -1,18 +1,80 @@
 import './bootstrap';
 import '../css/app.css';
-import React from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nProvider } from './i18n/I18nContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DataProvider } from './contexts/DataContext';
+import DashboardLayout from './components/DashboardLayout';
+import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Vehicles, { VehicleDetail } from './pages/Vehicles';
+import Reservations from './pages/Reservations';
+import Maintenance from './pages/Maintenance';
+import Admin from './pages/Admin';
 
-function App() {
+function AppShell() {
+    const { isAuthenticated } = useAuth();
+    const [publicView, setPublicView] = useState('landing');
+    const [view, setView] = useState('dashboard');
+    const [vehicleId, setVehicleId] = useState(null);
+    const [pendingReservationVehicle, setPendingReservationVehicle] = useState(null);
+
+    if (!isAuthenticated) {
+        if (publicView === 'login') {
+            return <Login onBack={() => setPublicView('landing')} />;
+        }
+        return <LandingPage onGoToLogin={() => setPublicView('login')} />;
+    }
+
+    const navigate = (next) => {
+        setView(next);
+        setVehicleId(null);
+        if (next !== 'reservations') setPendingReservationVehicle(null);
+    };
+
+    const openVehicle = (id) => {
+        setVehicleId(id);
+        setView('vehicle-detail');
+    };
+
+    const requestReservation = (id) => {
+        setPendingReservationVehicle(id);
+        setView('reservations');
+    };
+
+    let content;
+    if (view === 'dashboard') content = <Dashboard />;
+    else if (view === 'vehicles')
+        content = (
+            <Vehicles onOpenVehicle={openVehicle} onRequestReservation={requestReservation} />
+        );
+    else if (view === 'vehicle-detail')
+        content = (
+            <VehicleDetail
+                vehicleId={vehicleId}
+                onBack={() => navigate('vehicles')}
+                onRequestReservation={requestReservation}
+            />
+        );
+    else if (view === 'reservations')
+        content = (
+            <Reservations
+                initialNewVehicleId={pendingReservationVehicle}
+                onClearInitial={() => setPendingReservationVehicle(null)}
+            />
+        );
+    else if (view === 'maintenance') content = <Maintenance />;
+    else if (view === 'admin') content = <Admin />;
+    else content = <Dashboard />;
+
+    const sidebarView = view === 'vehicle-detail' ? 'vehicles' : view;
+
     return (
-        <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
-            <div className="mx-auto max-w-4xl rounded-xl bg-white p-8 shadow">
-                <h1 className="text-3xl font-bold">Reserva de Carros</h1>
-                <p className="mt-3 text-slate-600">
-                    Estrutura Laravel + React criada com sucesso.
-                </p>
-            </div>
-        </main>
+        <DashboardLayout currentView={sidebarView} onNavigate={navigate}>
+            {content}
+        </DashboardLayout>
     );
 }
 
@@ -21,7 +83,13 @@ const rootElement = document.getElementById('app');
 if (rootElement) {
     createRoot(rootElement).render(
         <React.StrictMode>
-            <App />
+            <I18nProvider>
+                <AuthProvider>
+                    <DataProvider>
+                        <AppShell />
+                    </DataProvider>
+                </AuthProvider>
+            </I18nProvider>
         </React.StrictMode>
     );
 }

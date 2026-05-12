@@ -1,0 +1,318 @@
+import React from 'react';
+import { useI18n } from '../i18n/I18nContext';
+import { useAuth, ROLES } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
+import { PageHeader, Button, Badge } from '../components/ui';
+import VehicleMedia from '../components/VehicleMedia';
+
+export default function Vehicles({ onOpenVehicle, onRequestReservation }) {
+    const { t } = useI18n();
+    const { vehicles } = useData();
+
+    return (
+        <div>
+            <PageHeader
+                kicker={t.nav.vehicles}
+                title={t.vehicles.title}
+                subtitle={t.vehicles.subtitle}
+            />
+
+            <div className="overflow-hidden rounded-md border border-border-soft">
+                <table className="min-w-full bg-surface text-sm">
+                    <thead className="border-b border-border-soft bg-paper-2/60 text-left">
+                        <tr>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.reservations.vehicle}
+                            </th>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.vehicles.plate}
+                            </th>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.vehicles.seats}
+                            </th>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.vehicles.km}
+                            </th>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.vehicles.nextInspection}
+                            </th>
+                            <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.vehicles.operational}
+                            </th>
+                            <th className="px-5 py-3 text-right font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                {t.common.actions}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {vehicles.map((v, i) => (
+                            <tr
+                                key={v.id}
+                                className={`${
+                                    i !== vehicles.length - 1 ? 'border-b border-border-soft' : ''
+                                } hover:bg-paper-2/40`}
+                            >
+                                <td className="px-5 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-12 w-16 overflow-hidden rounded-md bg-paper-2">
+                                            <VehicleMedia
+                                                vehicle={v}
+                                                imageClassName="h-full w-full object-cover"
+                                                className="h-full w-full"
+                                            />
+                                        </div>
+                                        <span className="font-medium text-ink">{v.name}</span>
+                                    </div>
+                                </td>
+                                <td className="px-5 py-4 font-mono text-xs text-ink">{v.plate}</td>
+                                <td className="px-5 py-4 text-muted">{v.seats}</td>
+                                <td className="px-5 py-4 font-mono text-xs text-muted">
+                                    {v.currentKm.toLocaleString('pt-PT')}
+                                </td>
+                                <td className="px-5 py-4 font-mono text-xs text-muted">
+                                    {v.nextInspection}
+                                </td>
+                                <td className="px-5 py-4">
+                                    <Badge tone={v.operational ? 'operational' : 'inoperational'}>
+                                        {v.operational
+                                            ? t.vehicles.operationalYes
+                                            : t.vehicles.operationalNo}
+                                    </Badge>
+                                </td>
+                                <td className="px-5 py-4 text-right">
+                                    <div className="inline-flex gap-2">
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={() => onOpenVehicle(v.id)}
+                                        >
+                                            {t.common.details}
+                                        </Button>
+                                        {v.operational && (
+                                            <Button
+                                                variant="accent"
+                                                size="sm"
+                                                onClick={() => onRequestReservation(v.id)}
+                                            >
+                                                {t.reservations.newReservation}
+                                            </Button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+export function VehicleDetail({ vehicleId, onBack, onRequestReservation }) {
+    const { t } = useI18n();
+    const { user } = useAuth();
+    const { getVehicle, getMaintenanceFor, reservations, setVehicleOperational } = useData();
+    const v = getVehicle(vehicleId);
+
+    if (!v) {
+        return (
+            <div>
+                <button onClick={onBack} className="text-sm text-muted hover:text-ink">
+                    ← {t.common.back}
+                </button>
+            </div>
+        );
+    }
+
+    const records = getMaintenanceFor(vehicleId);
+    const vehicleReservations = reservations.filter((r) => r.vehicleId === vehicleId);
+    const canManage = user.role === ROLES.MANAGER || user.role === ROLES.ADMIN;
+
+    return (
+        <div>
+            <button
+                onClick={onBack}
+                className="mb-6 inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink"
+            >
+                ← {t.common.back}
+            </button>
+
+            <div className="mb-12 flex flex-col items-start justify-between gap-6 border-b border-border-soft pb-8 md:flex-row md:items-end">
+                <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                        {v.plate}
+                    </p>
+                    <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink md:text-3xl">
+                        {v.name}
+                    </h1>
+                    <div className="mt-3">
+                        <Badge tone={v.operational ? 'operational' : 'inoperational'}>
+                            {v.operational ? t.vehicles.operationalYes : t.vehicles.operationalNo}
+                        </Badge>
+                    </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    {canManage && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setVehicleOperational(v.id, !v.operational)}
+                        >
+                            {v.operational
+                                ? t.vehicles.markInoperational
+                                : t.vehicles.markOperational}
+                        </Button>
+                    )}
+                    {v.operational && (
+                        <Button variant="accent" size="sm" onClick={() => onRequestReservation(v.id)}>
+                            {t.vehicles.requestThis}
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <div className="grid gap-12 lg:grid-cols-12">
+                <div className="lg:col-span-7">
+                    <div className="mb-6 overflow-hidden rounded-lg border border-border-soft bg-paper-2">
+                        <div className="aspect-[16/9]">
+                            <VehicleMedia
+                                vehicle={v}
+                                imageClassName="h-full w-full object-cover"
+                                className="h-full w-full"
+                            />
+                        </div>
+                    </div>
+                    <h2 className="mb-5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                        {t.vehicles.characteristics}
+                    </h2>
+                    <dl className="grid grid-cols-2 gap-x-8 gap-y-6 border-t border-border-soft pt-6">
+                        <Row label={t.vehicles.plate} value={v.plate} mono />
+                        <Row label={t.vehicles.seats} value={v.seats} />
+                        <Row label={t.vehicles.km} value={`${v.currentKm.toLocaleString('pt-PT')}`} mono />
+                        <Row
+                            label={t.vehicles.operational}
+                            value={v.operational ? t.common.yes : t.common.no}
+                        />
+                        <Row label={t.vehicles.nextInspection} value={v.nextInspection} mono />
+                    </dl>
+                </div>
+
+                <div className="lg:col-span-5">
+                    <h2 className="mb-5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                        {t.vehicles.insurance}
+                    </h2>
+                    <dl className="space-y-6 border-t border-border-soft pt-6">
+                        <Row label={t.vehicles.insuranceCompany} value={v.insuranceCompany} />
+                        <Row label={t.vehicles.insuranceType} value={v.insuranceType} />
+                        <Row label={t.vehicles.insuranceRenewal} value={v.insuranceRenewal} mono />
+                    </dl>
+                </div>
+            </div>
+
+            <div className="mt-16">
+                <h2 className="mb-5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                    {t.vehicles.maintenanceHistory}
+                </h2>
+                {records.length === 0 ? (
+                    <p className="border-t border-border-soft pt-6 text-sm text-muted">
+                        {t.vehicles.noMaintenance}
+                    </p>
+                ) : (
+                    <table className="min-w-full border-t border-border-soft text-sm">
+                        <thead className="text-left">
+                            <tr className="border-b border-border-soft">
+                                <th className="py-3 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                    {t.maintenance.date}
+                                </th>
+                                <th className="py-3 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                    {t.maintenance.type}
+                                </th>
+                                <th className="py-3 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                    {t.maintenance.downtimeDays}
+                                </th>
+                                <th className="py-3 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                    {t.maintenance.notes}
+                                </th>
+                                <th className="py-3 text-right font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+                                    {t.maintenance.cost}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {records.map((m, idx) => (
+                                <tr
+                                    key={m.id}
+                                    className={
+                                        idx !== records.length - 1
+                                            ? 'border-b border-border-soft'
+                                            : ''
+                                    }
+                                >
+                                    <td className="py-3 pr-4 font-mono text-xs text-muted">{m.date}</td>
+                                    <td className="py-3 pr-4 text-ink">{m.type}</td>
+                                    <td className="py-3 pr-4 font-mono text-xs text-muted">
+                                        {m.downtimeDays}
+                                    </td>
+                                    <td className="py-3 pr-4 text-muted">{m.notes}</td>
+                                    <td className="py-3 text-right font-mono text-xs font-medium text-ink">
+                                        {m.cost.toLocaleString('pt-PT')} €
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+
+            <div className="mt-16">
+                <h2 className="mb-5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                    {t.vehicles.reservationsHistory}
+                </h2>
+                {vehicleReservations.length === 0 ? (
+                    <p className="border-t border-border-soft pt-6 text-sm text-muted">
+                        {t.vehicles.noReservations}
+                    </p>
+                ) : (
+                    <ul className="border-t border-border-soft">
+                        {vehicleReservations.map((r) => (
+                            <li
+                                key={r.id}
+                                className="flex items-center justify-between border-b border-border-soft py-4"
+                            >
+                                <div>
+                                    <p className="text-sm font-medium text-ink">{r.trip}</p>
+                                    <p className="mt-0.5 font-mono text-xs text-muted">
+                                        {r.date} · {r.requestedByName}
+                                    </p>
+                                </div>
+                                <Badge tone={r.status}>
+                                    {t.reservations[
+                                        'status' +
+                                            r.status
+                                                .replace(/_./g, (m) => m[1].toUpperCase())
+                                                .replace(/^./, (m) => m.toUpperCase())
+                                    ] || r.status}
+                                </Badge>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function Row({ label, value, mono = false }) {
+    return (
+        <div>
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</dt>
+            <dd
+                className={`mt-1.5 text-sm text-ink ${
+                    mono ? 'font-mono' : 'font-medium'
+                }`}
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
