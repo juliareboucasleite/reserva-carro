@@ -105,8 +105,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 48.5,
-        cashback: 6.4,
         rating: '8.7',
         luggage: 7,
     },
@@ -118,8 +116,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 44.2,
-        cashback: 5.8,
         rating: '8.3',
         luggage: 6,
     },
@@ -131,8 +127,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 32.9,
-        cashback: 4.1,
         rating: '7.9',
         luggage: 5,
     },
@@ -144,8 +138,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 39.6,
-        cashback: 5.2,
         rating: '8.0',
         luggage: 6,
     },
@@ -157,8 +149,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 22.7,
-        cashback: 3.7,
         rating: '7.5',
         luggage: 4,
     },
@@ -170,8 +160,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 96.4,
-        cashback: 12.4,
         rating: '8.8',
         luggage: 14,
     },
@@ -183,20 +171,10 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 104.9,
-        cashback: 13.8,
         rating: '9.0',
         luggage: 16,
     },
 };
-
-function formatEuro(value) {
-    return new Intl.NumberFormat('pt-PT', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
 
 function normalizeText(value) {
     return String(value || '').trim().toLowerCase();
@@ -211,17 +189,13 @@ function getOfferPreset(vehicle) {
         protections: ['Seguro de Responsabilidade Civil'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 29.9,
-        cashback: 3.9,
         rating: '8.0',
         luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
     };
 }
 
-function buildSearchOffer(vehicle, routeData, pickupLocation, returnLocation) {
+function buildSearchOffer(vehicle, pickupLocation, returnLocation) {
     const preset = getOfferPreset(vehicle);
-    const distanceExtra = routeData?.distance_km ? Math.min(routeData.distance_km * 0.12, 22) : 0;
-    const computedPrice = Number((preset.price + distanceExtra).toFixed(2));
 
     return {
         id: vehicle.id,
@@ -235,8 +209,6 @@ function buildSearchOffer(vehicle, routeData, pickupLocation, returnLocation) {
         protections: preset.protections,
         included: preset.included,
         payment: preset.payment,
-        price: computedPrice,
-        cashback: preset.cashback,
         rating: preset.rating,
         luggage: preset.luggage,
         transmission: preset.features.includes('Automático') ? 'Automático' : 'Manual',
@@ -300,9 +272,6 @@ export default function LandingPage({
     const [selectedIncluded, setSelectedIncluded] = useState([]);
     const [selectedMileage, setSelectedMileage] = useState([]);
     const [selectedPayments, setSelectedPayments] = useState([]);
-    const [promoOnly, setPromoOnly] = useState(false);
-    const [priceMin, setPriceMin] = useState('');
-    const [priceMax, setPriceMax] = useState('');
     const [sortOrder, setSortOrder] = useState('recommended');
     const [activePanel, setActivePanel] = useState(null);
     const [calendarMonth, setCalendarMonth] = useState(monthStart(today));
@@ -354,12 +323,11 @@ export default function LandingPage({
         return vehicles.map((vehicle) =>
             buildSearchOffer(
                 vehicle,
-                routeData,
                 pickupLocationData?.label || pickupLocation,
                 returnLocationData?.label || returnLocation
             )
         );
-    }, [vehicles, routeData, pickupLocationData, pickupLocation, returnLocationData, returnLocation]);
+    }, [vehicles, pickupLocationData, pickupLocation, returnLocationData, returnLocation]);
 
     const categoryOptions = useMemo(() => {
         const groups = new Map();
@@ -367,13 +335,11 @@ export default function LandingPage({
             const current = groups.get(offer.categoryLabel) || {
                 label: offer.categoryLabel,
                 count: 0,
-                minPrice: offer.price,
             };
             current.count += 1;
-            current.minPrice = Math.min(current.minPrice, offer.price);
             groups.set(offer.categoryLabel, current);
         });
-        return [...groups.values()].sort((a, b) => a.minPrice - b.minPrice);
+        return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
     }, [offers]);
 
     const supplierOptions = useMemo(() => {
@@ -382,10 +348,8 @@ export default function LandingPage({
             const current = groups.get(offer.supplier) || {
                 label: offer.supplier,
                 count: 0,
-                minPrice: offer.price,
             };
             current.count += 1;
-            current.minPrice = Math.min(current.minPrice, offer.price);
             groups.set(offer.supplier, current);
         });
         return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
@@ -457,25 +421,9 @@ export default function LandingPage({
             .filter((item) => item.count > 0);
     }, [offers]);
 
-    const minAvailablePrice = useMemo(
-        () => (offers.length ? Math.floor(Math.min(...offers.map((offer) => offer.price))) : 0),
-        [offers]
-    );
-    const maxAvailablePrice = useMemo(
-        () => (offers.length ? Math.ceil(Math.max(...offers.map((offer) => offer.price))) : 0),
-        [offers]
-    );
-
-    useEffect(() => {
-        if (offers.length === 0) return;
-        if (priceMin === '') setPriceMin(String(minAvailablePrice));
-        if (priceMax === '') setPriceMax(String(maxAvailablePrice));
-    }, [offers, priceMin, priceMax, minAvailablePrice, maxAvailablePrice]);
-
     const filteredOffers = useMemo(() => {
         let result = offers.filter((offer) => {
             if (statusFilter === 'available' && offer.vehicle.availability === 'inoperational') return false;
-            if (promoOnly && offer.cashback < 5) return false;
             if (selectedCategories.length && !selectedCategories.includes(offer.categoryLabel)) return false;
             if (selectedSuppliers.length && !selectedSuppliers.includes(offer.supplier)) return false;
             if (selectedPickupModes.length && !selectedPickupModes.includes(offer.pickupMode)) return false;
@@ -485,19 +433,13 @@ export default function LandingPage({
             if (selectedIncluded.length && !selectedIncluded.every((item) => offer.included.includes(item))) return false;
             if (selectedMileage.length && !selectedMileage.includes(offer.mileageLabel)) return false;
             if (selectedPayments.length && !selectedPayments.includes(offer.payment)) return false;
-            if (priceMin !== '' && offer.price < Number(priceMin)) return false;
-            if (priceMax !== '' && offer.price > Number(priceMax)) return false;
             return true;
         });
 
-        if (sortOrder === 'price_asc') {
-            result = [...result].sort((a, b) => a.price - b.price);
-        } else if (sortOrder === 'price_desc') {
-            result = [...result].sort((a, b) => b.price - a.price);
-        } else if (sortOrder === 'rating') {
+        if (sortOrder === 'rating') {
             result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating));
         } else {
-            result = [...result].sort((a, b) => a.price - b.price || Number(b.rating) - Number(a.rating));
+            result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating) || a.title.localeCompare(b.title));
         }
 
         return result;
@@ -513,9 +455,6 @@ export default function LandingPage({
         selectedIncluded,
         selectedMileage,
         selectedPayments,
-        promoOnly,
-        priceMin,
-        priceMax,
         sortOrder,
     ]);
 
@@ -525,7 +464,6 @@ export default function LandingPage({
     );
 
     const activeFilterTags = [
-        ...(promoOnly ? [{ type: 'promo', value: 'Goleada de Ofertas' }] : []),
         ...selectedCategories.map((value) => ({ type: 'category', value })),
         ...selectedSuppliers.map((value) => ({ type: 'supplier', value })),
         ...selectedPickupModes.map((value) => ({ type: 'pickup', value })),
@@ -651,7 +589,6 @@ export default function LandingPage({
     }
 
     function clearSearchFilters() {
-        setPromoOnly(false);
         setSelectedCategories([]);
         setSelectedSuppliers([]);
         setSelectedPickupModes([]);
@@ -661,14 +598,11 @@ export default function LandingPage({
         setSelectedIncluded([]);
         setSelectedMileage([]);
         setSelectedPayments([]);
-        setPriceMin(String(minAvailablePrice));
-        setPriceMax(String(maxAvailablePrice));
         setSortOrder('recommended');
         setStatusFilter('all');
     }
 
     function removeActiveFilter(tag) {
-        if (tag.type === 'promo') setPromoOnly(false);
         if (tag.type === 'category') toggleFilterValue(setSelectedCategories, tag.value);
         if (tag.type === 'supplier') toggleFilterValue(setSelectedSuppliers, tag.value);
         if (tag.type === 'pickup') toggleFilterValue(setSelectedPickupModes, tag.value);
@@ -971,50 +905,6 @@ export default function LandingPage({
                                 </div>
 
                                 <div className="space-y-5 px-5 py-5">
-                                    <FilterSection title="Promoções">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPromoOnly((current) => !current)}
-                                            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                                                promoOnly
-                                                    ? 'border-amber-300 bg-amber-50 text-amber-800'
-                                                    : 'border-border bg-paper-2 text-ink hover:border-ink/20'
-                                            }`}
-                                        >
-                                            Goleada de Ofertas
-                                        </button>
-                                    </FilterSection>
-
-                                    <FilterSection title="Preço total">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="rounded-2xl border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-xs text-muted">Mínimo</span>
-                                                <input
-                                                    type="number"
-                                                    min={minAvailablePrice}
-                                                    max={maxAvailablePrice}
-                                                    value={priceMin}
-                                                    onChange={(event) => setPriceMin(event.target.value)}
-                                                    className="mt-1 w-full bg-transparent text-base font-semibold text-ink outline-none"
-                                                />
-                                            </label>
-                                            <label className="rounded-2xl border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-xs text-muted">Máximo</span>
-                                                <input
-                                                    type="number"
-                                                    min={minAvailablePrice}
-                                                    max={maxAvailablePrice}
-                                                    value={priceMax}
-                                                    onChange={(event) => setPriceMax(event.target.value)}
-                                                    className="mt-1 w-full bg-transparent text-base font-semibold text-ink outline-none"
-                                                />
-                                            </label>
-                                        </div>
-                                        <p className="mt-3 text-xs text-muted">
-                                            {formatEuro(minAvailablePrice)} até {formatEuro(maxAvailablePrice)}
-                                        </p>
-                                    </FilterSection>
-
                                     <FilterSection title="Levantamento">
                                         <div className="space-y-2">
                                             {pickupModeOptions.map((option) => (
@@ -1056,7 +946,7 @@ export default function LandingPage({
                                                 <SidebarCheckbox
                                                     key={option.label}
                                                     label={option.label}
-                                                    meta={formatEuro(option.minPrice)}
+                                                    meta={option.count}
                                                     checked={selectedCategories.includes(option.label)}
                                                     onChange={() =>
                                                         toggleFilterValue(setSelectedCategories, option.label)
@@ -1072,7 +962,7 @@ export default function LandingPage({
                                                 <SidebarCheckbox
                                                     key={option.label}
                                                     label={option.label}
-                                                    meta={formatEuro(option.minPrice)}
+                                                    meta={option.count}
                                                     checked={selectedSuppliers.includes(option.label)}
                                                     onChange={() =>
                                                         toggleFilterValue(setSelectedSuppliers, option.label)
@@ -1122,7 +1012,7 @@ export default function LandingPage({
                                         </div>
                                     </FilterSection>
 
-                                    <FilterSection title="Incluído no Preço">
+                                    <FilterSection title="Incluído">
                                         <div className="flex flex-wrap gap-2">
                                             {includedOptions.map((option) => (
                                                 <button
@@ -1190,9 +1080,6 @@ export default function LandingPage({
                                         }`}
                                     >
                                         <p className="text-lg font-bold text-ink">{option.label}</p>
-                                        <p className="mt-1 text-sm text-muted">
-                                            A partir de {formatEuro(option.minPrice)}
-                                        </p>
                                         <p className="mt-2 text-xs text-muted">{option.count} opção(ões)</p>
                                     </button>
                                 ))}
@@ -1227,8 +1114,6 @@ export default function LandingPage({
                                         className="bg-transparent font-medium text-ink outline-none"
                                     >
                                         <option value="recommended">Mais procurados</option>
-                                        <option value="price_asc">Preço mais baixo</option>
-                                        <option value="price_desc">Preço mais alto</option>
                                         <option value="rating">Melhor avaliação</option>
                                     </select>
                                 </label>
@@ -1520,9 +1405,6 @@ function SearchOfferCard({ offer, onReserve }) {
                             <h3 className="text-2xl font-bold tracking-tight text-ink">{offer.title}</h3>
                             <p className="mt-1 text-sm text-muted">{offer.subtitle}</p>
                         </div>
-                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                            Cashback de {formatEuro(offer.cashback)}
-                        </span>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2 text-sm">
@@ -1547,9 +1429,9 @@ function SearchOfferCard({ offer, onReserve }) {
                         </div>
 
                         <div className="rounded-2xl border border-border-soft bg-paper-2/60 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted">A sua reserva</p>
-                            <p className="mt-3 text-3xl font-bold tracking-tight text-ink">
-                                {formatEuro(offer.price)}
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Reserva</p>
+                            <p className="mt-3 text-lg font-semibold tracking-tight text-ink">
+                                Pedido sem valor apresentado
                             </p>
                             <p className="mt-1 text-sm text-positive">Cancelamento grátis</p>
 
@@ -1580,7 +1462,7 @@ function SearchOfferCard({ offer, onReserve }) {
                             <p className="mt-2 text-2xl font-bold tracking-tight text-ink">
                                 {offer.categoryLabel}
                             </p>
-                            <p className="mt-1 text-sm text-muted">Desde {formatEuro(offer.price)}/dia</p>
+                            <p className="mt-1 text-sm text-muted">{offer.payment}</p>
                         </div>
 
                         <div className="space-y-2 text-sm text-muted">

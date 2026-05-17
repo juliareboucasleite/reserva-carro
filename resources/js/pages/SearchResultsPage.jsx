@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import VehicleMedia from '../components/VehicleMedia';
 
@@ -11,8 +11,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 48.5,
-        cashback: 6.4,
         rating: '8.7',
         ratingCount: 1248,
         luggage: 7,
@@ -25,8 +23,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 44.2,
-        cashback: 5.8,
         rating: '8.3',
         ratingCount: 982,
         luggage: 6,
@@ -39,8 +35,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 32.9,
-        cashback: 4.1,
         rating: '7.9',
         ratingCount: 614,
         luggage: 5,
@@ -53,8 +47,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Proteção do Veículo e Contra Roubo'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 39.6,
-        cashback: 5.2,
         rating: '8.0',
         ratingCount: 736,
         luggage: 6,
@@ -67,8 +59,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil'],
         included: ['Condutor Adicional'],
         payment: 'Pague agora',
-        price: 22.7,
-        cashback: 3.7,
         rating: '7.5',
         ratingCount: 412,
         luggage: 4,
@@ -81,8 +71,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 96.4,
-        cashback: 12.4,
         rating: '8.8',
         ratingCount: 322,
         luggage: 14,
@@ -95,8 +83,6 @@ const OFFER_PRESETS = {
         protections: ['Seguro de Responsabilidade Civil', 'Serviço de Assistência Premium'],
         included: ['Condutor Adicional'],
         payment: 'Pague no levantamento',
-        price: 104.9,
-        cashback: 13.8,
         rating: '9.0',
         ratingCount: 287,
         luggage: 16,
@@ -105,18 +91,8 @@ const OFFER_PRESETS = {
 
 const SORT_OPTIONS = [
     { value: 'recommended', label: 'Mais procurados' },
-    { value: 'price_asc', label: 'Preço mais baixo' },
-    { value: 'price_desc', label: 'Preço mais alto' },
     { value: 'rating', label: 'Melhor avaliação' },
 ];
-
-function formatEuro(value) {
-    return new Intl.NumberFormat('pt-PT', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 2,
-    }).format(value);
-}
 
 function normalizeText(value) {
     return String(value || '').trim().toLowerCase();
@@ -133,8 +109,6 @@ function getOfferPreset(vehicle) {
             protections: ['Seguro de Responsabilidade Civil'],
             included: ['Condutor Adicional'],
             payment: 'Pague agora',
-            price: 29.9,
-            cashback: 3.9,
             rating: '8.0',
             ratingCount: 250,
             luggage: Math.max(2, Math.ceil((vehicle.seats || 4) / 2)),
@@ -144,10 +118,6 @@ function getOfferPreset(vehicle) {
 
 function buildSearchOffer(vehicle, search) {
     const preset = getOfferPreset(vehicle);
-    const distanceExtra = search?.routeData?.distance_km
-        ? Math.min(search.routeData.distance_km * 0.12, 22)
-        : 0;
-    const computedPrice = Number((preset.price + distanceExtra).toFixed(2));
 
     const fuelLabel = preset.features.includes('Elétrico')
         ? 'Elétrico'
@@ -169,8 +139,6 @@ function buildSearchOffer(vehicle, search) {
         protections: preset.protections,
         included: preset.included,
         payment: preset.payment,
-        price: computedPrice,
-        cashback: preset.cashback,
         rating: preset.rating,
         ratingCount: preset.ratingCount,
         luggage: preset.luggage,
@@ -215,9 +183,6 @@ export default function SearchResultsPage({
     const [selectedIncluded, setSelectedIncluded] = useState([]);
     const [selectedMileage, setSelectedMileage] = useState([]);
     const [selectedPayments, setSelectedPayments] = useState([]);
-    const [promoOnly, setPromoOnly] = useState(false);
-    const [priceMin, setPriceMin] = useState('');
-    const [priceMax, setPriceMax] = useState('');
     const [sortOrder, setSortOrder] = useState('recommended');
 
     const offers = useMemo(
@@ -225,11 +190,11 @@ export default function SearchResultsPage({
         [vehicles, search]
     );
 
-    const categoryOptions = useMemo(() => groupByLabel(offers, (o) => o.categoryLabel, true), [offers]);
-    const supplierOptions = useMemo(() => groupByLabel(offers, (o) => o.supplier, true), [offers]);
-    const pickupModeOptions = useMemo(() => groupByLabel(offers, (o) => o.pickupMode, false), [offers]);
-    const paymentOptions = useMemo(() => groupByLabel(offers, (o) => o.payment, false), [offers]);
-    const mileageOptions = useMemo(() => groupByLabel(offers, (o) => o.mileageLabel, false), [offers]);
+    const categoryOptions = useMemo(() => groupByLabel(offers, (o) => o.categoryLabel), [offers]);
+    const supplierOptions = useMemo(() => groupByLabel(offers, (o) => o.supplier), [offers]);
+    const pickupModeOptions = useMemo(() => groupByLabel(offers, (o) => o.pickupMode), [offers]);
+    const paymentOptions = useMemo(() => groupByLabel(offers, (o) => o.payment), [offers]);
+    const mileageOptions = useMemo(() => groupByLabel(offers, (o) => o.mileageLabel), [offers]);
     const featureOptions = useMemo(() => groupByList(offers, (o) => o.features), [offers]);
     const protectionOptions = useMemo(() => groupByList(offers, (o) => o.protections), [offers]);
     const includedOptions = useMemo(() => groupByList(offers, (o) => o.included), [offers]);
@@ -243,25 +208,9 @@ export default function SearchResultsPage({
             .filter((item) => item.count > 0);
     }, [offers]);
 
-    const minAvailablePrice = useMemo(
-        () => (offers.length ? Math.floor(Math.min(...offers.map((o) => o.price))) : 0),
-        [offers]
-    );
-    const maxAvailablePrice = useMemo(
-        () => (offers.length ? Math.ceil(Math.max(...offers.map((o) => o.price))) : 0),
-        [offers]
-    );
-
-    useEffect(() => {
-        if (!offers.length) return;
-        if (priceMin === '') setPriceMin(String(minAvailablePrice));
-        if (priceMax === '') setPriceMax(String(maxAvailablePrice));
-    }, [offers, priceMin, priceMax, minAvailablePrice, maxAvailablePrice]);
-
     const filteredOffers = useMemo(() => {
         let result = offers.filter((offer) => {
             if (statusFilter === 'available' && offer.vehicle.availability === 'inoperational') return false;
-            if (promoOnly && offer.cashback < 5) return false;
             if (selectedCategories.length && !selectedCategories.includes(offer.categoryLabel)) return false;
             if (selectedSuppliers.length && !selectedSuppliers.includes(offer.supplier)) return false;
             if (selectedPickupModes.length && !selectedPickupModes.includes(offer.pickupMode)) return false;
@@ -271,15 +220,11 @@ export default function SearchResultsPage({
             if (selectedIncluded.length && !selectedIncluded.every((p) => offer.included.includes(p))) return false;
             if (selectedMileage.length && !selectedMileage.includes(offer.mileageLabel)) return false;
             if (selectedPayments.length && !selectedPayments.includes(offer.payment)) return false;
-            if (priceMin !== '' && offer.price < Number(priceMin)) return false;
-            if (priceMax !== '' && offer.price > Number(priceMax)) return false;
             return true;
         });
 
-        if (sortOrder === 'price_asc') result = [...result].sort((a, b) => a.price - b.price);
-        else if (sortOrder === 'price_desc') result = [...result].sort((a, b) => b.price - a.price);
-        else if (sortOrder === 'rating') result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating));
-        else result = [...result].sort((a, b) => a.price - b.price || Number(b.rating) - Number(a.rating));
+        if (sortOrder === 'rating') result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating));
+        else result = [...result].sort((a, b) => Number(b.rating) - Number(a.rating) || a.title.localeCompare(b.title));
 
         return result;
     }, [
@@ -294,14 +239,10 @@ export default function SearchResultsPage({
         selectedIncluded,
         selectedMileage,
         selectedPayments,
-        promoOnly,
-        priceMin,
-        priceMax,
         sortOrder,
     ]);
 
     const activeFilterTags = [
-        ...(promoOnly ? [{ type: 'promo', value: 'Goleada de Ofertas' }] : []),
         ...selectedCategories.map((value) => ({ type: 'category', value })),
         ...selectedSuppliers.map((value) => ({ type: 'supplier', value })),
         ...selectedPickupModes.map((value) => ({ type: 'pickup', value })),
@@ -329,7 +270,6 @@ export default function SearchResultsPage({
     }
 
     function clearFilters() {
-        setPromoOnly(false);
         setSelectedCategories([]);
         setSelectedSuppliers([]);
         setSelectedPickupModes([]);
@@ -339,14 +279,11 @@ export default function SearchResultsPage({
         setSelectedIncluded([]);
         setSelectedMileage([]);
         setSelectedPayments([]);
-        setPriceMin(String(minAvailablePrice));
-        setPriceMax(String(maxAvailablePrice));
         setSortOrder('recommended');
         setStatusFilter('all');
     }
 
     function removeActiveFilter(tag) {
-        if (tag.type === 'promo') setPromoOnly(false);
         if (tag.type === 'category') toggleValue(setSelectedCategories, tag.value);
         if (tag.type === 'supplier') toggleValue(setSelectedSuppliers, tag.value);
         if (tag.type === 'pickup') toggleValue(setSelectedPickupModes, tag.value);
@@ -418,20 +355,6 @@ export default function SearchResultsPage({
                                 </div>
 
                                 <div className="space-y-5 px-4 py-4">
-                                    <FilterSection title="Promoções">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPromoOnly((current) => !current)}
-                                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                                                promoOnly
-                                                    ? 'border-amber-300 bg-amber-50 text-amber-800'
-                                                    : 'border-border bg-paper-2 text-ink hover:border-ink/30'
-                                            }`}
-                                        >
-                                            Goleada de Ofertas
-                                        </button>
-                                    </FilterSection>
-
                                     <FilterSection title="Tipos de Pagamento">
                                         <div className="space-y-1.5">
                                             {paymentOptions.map((option) => (
@@ -444,40 +367,6 @@ export default function SearchResultsPage({
                                                 />
                                             ))}
                                         </div>
-                                    </FilterSection>
-
-                                    <FilterSection title="Preço total">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <label className="rounded-md border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
-                                                    Mínimo
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    min={minAvailablePrice}
-                                                    max={maxAvailablePrice}
-                                                    value={priceMin}
-                                                    onChange={(event) => setPriceMin(event.target.value)}
-                                                    className="mt-0.5 w-full bg-transparent font-mono text-sm font-semibold text-ink outline-none"
-                                                />
-                                            </label>
-                                            <label className="rounded-md border border-border bg-paper-2 px-3 py-2">
-                                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
-                                                    Máximo
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    min={minAvailablePrice}
-                                                    max={maxAvailablePrice}
-                                                    value={priceMax}
-                                                    onChange={(event) => setPriceMax(event.target.value)}
-                                                    className="mt-0.5 w-full bg-transparent font-mono text-sm font-semibold text-ink outline-none"
-                                                />
-                                            </label>
-                                        </div>
-                                        <p className="mt-2 text-xs text-muted">
-                                            {formatEuro(minAvailablePrice)} a {formatEuro(maxAvailablePrice)}
-                                        </p>
                                     </FilterSection>
 
                                     <FilterSection title="Locação">
@@ -514,7 +403,7 @@ export default function SearchResultsPage({
                                                 <SidebarCheckbox
                                                     key={option.label}
                                                     label={option.label}
-                                                    meta={formatEuro(option.minPrice)}
+                                                    meta={option.count}
                                                     checked={selectedCategories.includes(option.label)}
                                                     onChange={() => toggleValue(setSelectedCategories, option.label)}
                                                 />
@@ -528,7 +417,7 @@ export default function SearchResultsPage({
                                                 <SidebarCheckbox
                                                     key={option.label}
                                                     label={option.label}
-                                                    meta={formatEuro(option.minPrice)}
+                                                    meta={option.count}
                                                     checked={selectedSuppliers.includes(option.label)}
                                                     onChange={() => toggleValue(setSelectedSuppliers, option.label)}
                                                 />
@@ -685,17 +574,15 @@ export default function SearchResultsPage({
     );
 }
 
-function groupByLabel(offers, getLabel, trackMinPrice) {
+function groupByLabel(offers, getLabel) {
     const groups = new Map();
     offers.forEach((offer) => {
         const label = getLabel(offer);
-        const current = groups.get(label) || { label, count: 0, minPrice: offer.price };
+        const current = groups.get(label) || { label, count: 0 };
         current.count += 1;
-        if (trackMinPrice) current.minPrice = Math.min(current.minPrice, offer.price);
         groups.set(label, current);
     });
-    const list = [...groups.values()];
-    return trackMinPrice ? list.sort((a, b) => a.minPrice - b.minPrice) : list;
+    return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function groupByList(offers, getList) {
@@ -810,10 +697,6 @@ function SearchOfferCard({ offer, onReserve }) {
                         <SpecPill>{offer.fuelLabel}</SpecPill>
                     </div>
 
-                    <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-                        Cashback de {formatEuro(offer.cashback)}
-                    </div>
-
                     <ul className="mt-3 space-y-1 text-sm text-ink">
                         {offer.protections.map((item) => (
                             <li key={item} className="flex items-start gap-2">
@@ -835,13 +718,14 @@ function SearchOfferCard({ offer, onReserve }) {
 
                 <div className="flex flex-col justify-between border-t border-border-soft p-4 lg:border-l lg:border-t-0">
                     <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">A sua reserva</p>
-                        <p className="mt-1 font-mono text-3xl font-bold tracking-tight text-ink">
-                            {formatEuro(offer.price)}
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Reserva</p>
+                        <p className="mt-1 text-lg font-semibold tracking-tight text-ink">
+                            Pedido sem valor apresentado
                         </p>
                         <p className="mt-1 text-xs font-semibold text-positive">Cancelamento grátis</p>
 
                         <div className="mt-3 space-y-1 text-xs text-muted">
+                            <p>{offer.fuelLabel}</p>
                             <p>{offer.payment}</p>
                             {offer.included.map((item) => (
                                 <p key={item}>{item}</p>
