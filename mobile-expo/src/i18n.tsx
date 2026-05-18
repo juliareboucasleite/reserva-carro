@@ -242,9 +242,7 @@ const dict = {
       language: 'Idioma',
     },
   },
-} as const;
-
-dict satisfies Record<string, unknown>;
+};
 
 const en: typeof dict.pt = {
   common: {

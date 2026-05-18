@@ -7,6 +7,9 @@
 .phpunit.result.cache
 /.fleet
 /.idea
+.claude\settings.local.json
+.claude\settings.json
+.claude
 /.nova
 /.phpunit.cache
 /.vscode
