@@ -30,6 +30,7 @@ class User extends Authenticatable
         'birthdate',
         'phone',
         'newsletter_opt_in',
+        'mobile_api_token',
     ];
 
     /**
@@ -40,6 +41,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'mobile_api_token',
     ];
 
     /**

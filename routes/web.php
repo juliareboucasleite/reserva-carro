@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DamageController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\MobileAuthController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\VehicleController;
@@ -15,7 +16,7 @@ Route::get('/', function () {
 
 Route::get('/{any}', function () {
     return view('welcome');
-})->where('any', '^(?!api|auth|locations).*$');
+})->where('any', '^(?!api|auth|locations|mobile).*$');
 
 Route::prefix('auth')->group(function () {
     Route::middleware('guest')->group(function () {
@@ -32,6 +33,38 @@ Route::prefix('auth')->group(function () {
 Route::prefix('locations')->group(function () {
     Route::get('/autocomplete', [LocationController::class, 'autocomplete']);
     Route::post('/route', [LocationController::class, 'route']);
+});
+
+Route::prefix('mobile')->group(function () {
+    Route::post('/auth/login', [MobileAuthController::class, 'login']);
+
+    Route::middleware('mobile.token')->group(function () {
+        Route::get('/auth/me', [MobileAuthController::class, 'me']);
+        Route::post('/auth/logout', [MobileAuthController::class, 'logout']);
+
+        Route::get('/vehicles', [VehicleController::class, 'index']);
+        Route::get('/vehicles/{vehicle}', [VehicleController::class, 'show']);
+
+        Route::get('/reservations', [ReservationController::class, 'index']);
+        Route::post('/reservations', [ReservationController::class, 'store']);
+        Route::get('/reservations/{reservation}', [ReservationController::class, 'show']);
+        Route::post('/reservations/{reservation}/approve', [ReservationController::class, 'approve']);
+        Route::post('/reservations/{reservation}/reject', [ReservationController::class, 'reject']);
+        Route::post('/reservations/{reservation}/checkin', [ReservationController::class, 'checkIn']);
+        Route::post('/reservations/{reservation}/checkout', [ReservationController::class, 'checkOut']);
+        Route::post('/reservations/{reservation}/confirm-operational', [ReservationController::class, 'confirmOperational']);
+
+        Route::get('/maintenance', [MaintenanceController::class, 'index']);
+        Route::post('/maintenance', [MaintenanceController::class, 'store']);
+
+        Route::get('/damages', [DamageController::class, 'index']);
+        Route::post('/reservations/{reservation}/damages', [DamageController::class, 'store']);
+        Route::patch('/damages/{damage}/cost', [DamageController::class, 'setCost']);
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    });
 });
 
 Route::get('/api/vehicles', [VehicleController::class, 'index']);
