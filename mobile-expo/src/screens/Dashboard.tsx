@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../state';
 import { useData } from '../state';
 import { useI18n, formatTemplate } from '../i18n';
-import { Card, Empty, Hairline, PageHeader, SectionHeader, Stat } from '../ui';
+import { Empty, PageHeader, SectionHeader, Stat } from '../ui';
 import { colors, fontSizes, fontWeights, letterSpacing, spacing } from '../theme';
 
 function daysUntil(dateStr?: string | null) {

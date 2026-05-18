@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(awk '/^        maintenance: {/,/^        },/' resources/js/i18n/translations.js)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(echo \"---exit $?\")"
     ]
   }
 }

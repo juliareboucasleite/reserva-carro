@@ -25,7 +25,6 @@ import {
   SectionHeader,
   Sheet,
   SheetHeader,
-  Spinner,
 } from '../ui';
 import { AngleCaptureGrid, capturePhoto } from '../AngleCapture';
 import type {
