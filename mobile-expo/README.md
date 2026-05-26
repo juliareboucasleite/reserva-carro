@@ -5,7 +5,8 @@ App móvel em Expo Go para consumir o backend Laravel deste repositório.
 ## O que já faz
 
 - ecrã inicial estilo app de reservas (pesquisa, menu, notificações, benefícios)
-- fluxo de pesquisa: local, datas/horários e formulário de procura
+- fluxo de pesquisa: local, datas/horários, lista de viaturas, mapa e configurar reserva (sem pagamento)
+- imagens das viaturas em `assets/carros` (mesmas do site em `resources/img/carros`)
 - login com token móvel (`/mobile/auth/login`)
 - listagem de viaturas
 - listagem e detalhe de reservas

@@ -9,6 +9,9 @@ import { HomeScreen } from './screens/HomeScreen';
 import { LocationSearchScreen } from './screens/LocationSearchScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 import { TimePickerScreen } from './screens/TimePickerScreen';
+import { ResultsScreen } from './screens/ResultsScreen';
+import { ConfigureScreen } from './screens/ConfigureScreen';
+import { MapScreen } from './screens/MapScreen';
 import { colors } from '../theme';
 
 function BookingRouter() {
@@ -23,6 +26,12 @@ function BookingRouter() {
       return <LocationSearchScreen mode="return" />;
     case 'time-picker':
       return <TimePickerScreen />;
+    case 'results':
+      return <ResultsScreen />;
+    case 'map':
+      return <MapScreen />;
+    case 'configure':
+      return <ConfigureScreen />;
     case 'home':
     default:
       return <HomeScreen />;

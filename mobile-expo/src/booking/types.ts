@@ -12,6 +12,9 @@ export type BookingScreen =
   | 'benefits'
   | 'location-pickup'
   | 'location-return'
-  | 'time-picker';
+  | 'time-picker'
+  | 'results'
+  | 'map'
+  | 'configure';
 
 export type LocationFilter = 'all' | LocationKind;

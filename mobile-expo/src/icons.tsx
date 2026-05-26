@@ -33,6 +33,17 @@ const iconNames = {
   'logo-facebook': 'logo-facebook',
   'logo-instagram': 'logo-instagram',
   'logo-linkedin': 'logo-linkedin',
+  'create-outline': 'create-outline',
+  sort: 'swap-vertical-outline',
+  filters: 'options-outline',
+  map: 'map-outline',
+  list: 'list-outline',
+  info: 'information-circle-outline',
+  'checkmark-circle': 'checkmark-circle',
+  'radio-off': 'radio-button-off-outline',
+  snow: 'snow-outline',
+  luggage: 'briefcase-outline',
+  speedometer: 'speedometer-outline',
 } as const;
 
 export type IconName = keyof typeof iconNames;
