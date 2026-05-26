@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { useI18n } from '../../i18n';
 import { LOCATIONS, NEAR_PICKUP } from '../locations';
 import { useBooking } from '../context';
@@ -75,13 +75,13 @@ export function LocationSearchScreen({ mode }: { mode: 'pickup' | 'return' }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Pressable onPress={goBack} style={styles.back}>
-        <Ionicons name="arrow-back" size={24} color={colors.ink} />
+        <Icon name="arrow-back" size={24} color={colors.ink} />
       </Pressable>
 
       <Text style={styles.title}>{title}</Text>
 
       <View style={[styles.inputWrap, query.length > 0 && styles.inputFocused]}>
-        <Ionicons name="location-outline" size={20} color={colors.muted} />
+        <Icon name="location-outline" size={20} color={colors.muted} />
         <TextInput
           style={styles.input}
           value={query}
@@ -112,7 +112,7 @@ export function LocationSearchScreen({ mode }: { mode: 'pickup' | 'return' }) {
       {mode === 'return' ? (
         <Pressable style={styles.sameRow} onPress={samePickup}>
           <View style={styles.sameIcon}>
-            <Ionicons name="return-up-back" size={20} color={colors.muted} />
+            <Icon name="return-up-back" size={20} color={colors.muted} />
           </View>
           <Text style={styles.sameLabel}>{b.samePickup}</Text>
         </Pressable>
@@ -129,7 +129,7 @@ export function LocationSearchScreen({ mode }: { mode: 'pickup' | 'return' }) {
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => select(item)}>
             <View style={styles.rowIcon}>
-              <Ionicons
+              <Icon
                 name={item.kind === 'airport' ? 'airplane' : 'location-outline'}
                 size={18}
                 color={colors.muted}

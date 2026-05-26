@@ -1,11 +1,11 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '../../icons';
 import { useI18n } from '../../i18n';
 import { useBooking } from '../context';
 import { colors, fontSizes, fontWeights, radii, spacing } from '../../theme';
 
 type MenuItem = {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   onPress: () => void;
 };
@@ -51,7 +51,7 @@ export function MenuDrawer() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.profileRow}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={28} color={colors.brandGreen} />
+              <Icon name="person" size={28} color={colors.brandGreen} />
             </View>
             <Text style={styles.hello}>{b.menuHello}</Text>
           </View>
@@ -75,7 +75,7 @@ export function MenuDrawer() {
 
           <Text style={styles.section}>{b.menuPrefs}</Text>
           <Pressable style={styles.row} onPress={() => setLang(lang === 'pt' ? 'en' : 'pt')}>
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.ink} />
+            <Icon name="chatbubble-ellipses-outline" size={22} color={colors.ink} />
             <Text style={styles.rowLabel}>{b.menuLang}</Text>
             <View style={styles.langPill}>
               <Text style={styles.langPillText}>€ · {lang.toUpperCase()}</Text>
@@ -95,15 +95,15 @@ export function MenuDrawer() {
           <View style={styles.footer}>
             <Text style={styles.follow}>{b.menuFollow}</Text>
             <View style={styles.social}>
-              <Ionicons name="logo-facebook" size={22} color={colors.muted} />
-              <Ionicons name="logo-instagram" size={22} color={colors.muted} />
-              <Ionicons name="logo-linkedin" size={22} color={colors.muted} />
+              <Icon name="logo-facebook" size={22} color={colors.muted} />
+              <Icon name="logo-instagram" size={22} color={colors.muted} />
+              <Icon name="logo-linkedin" size={22} color={colors.muted} />
             </View>
           </View>
         </ScrollView>
 
         <Pressable style={styles.closeFab} onPress={close}>
-          <Ionicons name="close" size={22} color={colors.ink} />
+          <Icon name="close" size={22} color={colors.ink} />
         </Pressable>
       </View>
     </Modal>
@@ -113,7 +113,7 @@ export function MenuDrawer() {
 function MenuRow({ icon, label, onPress }: MenuItem) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <Ionicons name={icon} size={22} color={colors.ink} />
+      <Icon name={icon} size={22} color={colors.ink} />
       <Text style={styles.rowLabel}>{label}</Text>
     </Pressable>
   );

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, DataProvider, useAuth, useData } from './src/state';
 import { I18nProvider, useI18n } from './src/i18n';

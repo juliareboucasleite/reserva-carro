@@ -33,7 +33,7 @@ type AuthCtx = {
   setApiBaseUrl: (url: string) => Promise<void>;
   token: string | null;
   user: User | null;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, baseUrl?: string) => Promise<User>;
   logout: () => Promise<void>;
 };
 
@@ -130,8 +130,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const payload = await api.login(apiBaseUrl, email, password);
+    async (email: string, password: string, baseUrl?: string) => {
+      const resolved = normalizeBaseUrl(baseUrl || apiBaseUrl);
+      if (!resolved) {
+        throw new Error('Missing API base URL');
+      }
+      if (resolved !== apiBaseUrl) {
+        await SecureStore.setItemAsync(STORAGE_KEYS.apiBaseUrl, resolved);
+        setApiBaseUrlState(resolved);
+      }
+      const payload = await api.login(resolved, email, password);
       await SecureStore.setItemAsync(STORAGE_KEYS.authToken, payload.token);
       setToken(payload.token);
       setUser(payload.user);

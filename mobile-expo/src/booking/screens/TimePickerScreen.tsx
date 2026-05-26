@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { useI18n } from '../../i18n';
 import { TIME_SECTIONS } from '../times';
 import { useBooking } from '../context';
@@ -40,7 +40,7 @@ export function TimePickerScreen() {
   return (
     <View style={styles.root}>
       <Pressable onPress={goBack} style={styles.back}>
-        <Ionicons name="arrow-back" size={24} color={colors.ink} />
+        <Icon name="arrow-back" size={24} color={colors.ink} />
       </Pressable>
 
       <View style={styles.topRow}>
@@ -107,7 +107,7 @@ function TimeBox({
         onPress={onPress}
         style={[styles.box, active && { borderColor: colors.focusBlue }]}
       >
-        <Ionicons name="time-outline" size={18} color={colors.muted} />
+        <Icon name="time-outline" size={18} color={colors.muted} />
         <Text style={styles.boxValue}>{value}</Text>
       </Pressable>
     </View>

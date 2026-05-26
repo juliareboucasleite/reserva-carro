@@ -11,7 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { normalizeBaseUrl } from '../../api';
 import { useAuth } from '../../state';
 import { useI18n } from '../../i18n';
@@ -64,7 +64,11 @@ export function AuthSheet() {
     }
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
+      const base =
+        needsApi || urlInput.trim()
+          ? normalizeBaseUrl(urlInput)
+          : apiBaseUrl;
+      await login(email.trim(), password, base);
       close();
     } catch (error) {
       Alert.alert(a.loginFailed, error instanceof Error ? error.message : '');
@@ -83,10 +87,10 @@ export function AuthSheet() {
         <View style={styles.sheet}>
           <View style={styles.sheetTop}>
             <View style={styles.sheetIcon}>
-              <Ionicons name="person" size={28} color={colors.brandGreen} />
+              <Icon name="person" size={28} color={colors.brandGreen} />
             </View>
             <Pressable onPress={close} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color={colors.muted} />
+              <Icon name="close" size={20} color={colors.muted} />
             </Pressable>
           </View>
 

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { useI18n } from '../../i18n';
 import { useBooking } from '../context';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -17,9 +17,9 @@ export function NotificationsScreen() {
       <View style={styles.body}>
         <View style={styles.illusCard}>
           <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={32} color={colors.brandYellow} />
+            <Icon name="person-outline" size={32} color={colors.brandYellow} />
             <View style={styles.check}>
-              <Ionicons name="checkmark" size={10} color={colors.paper} />
+              <Icon name="checkmark" size={10} color={colors.paper} />
             </View>
           </View>
           <View style={styles.skeleton}>

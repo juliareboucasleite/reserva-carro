@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { StatusBar } from 'expo-status-bar';
 import { useI18n } from '../../i18n';
 import { useBooking } from '../context';
@@ -19,13 +19,13 @@ export function HomeScreen() {
           <BrandLogo />
           <View style={styles.headerActions}>
             <IconButton onPress={() => navigate('notifications')}>
-              <Ionicons name="notifications-outline" size={24} color={colors.paper} />
+              <Icon name="notifications-outline" size={24} color={colors.paper} />
             </IconButton>
             <View style={styles.flag}>
               <Text style={styles.flagText}>🇵🇹</Text>
             </View>
             <IconButton onPress={() => setMenuOpen(true)}>
-              <Ionicons name="menu" size={26} color={colors.paper} />
+              <Icon name="menu" size={26} color={colors.paper} />
             </IconButton>
           </View>
         </View>
@@ -36,7 +36,7 @@ export function HomeScreen() {
         <View style={styles.searchCard}>
           <Text style={styles.searchTitle}>{b.searchTitle}</Text>
           <Pressable style={styles.searchInput} onPress={() => setSearchOpen(true)}>
-            <Ionicons name="location-outline" size={20} color={colors.muted} />
+            <Icon name="location-outline" size={20} color={colors.muted} />
             <Text style={styles.searchPlaceholder}>{b.searchPlaceholder}</Text>
           </Pressable>
           <GreenButton label={b.search} onPress={() => setSearchOpen(true)} />
@@ -51,13 +51,13 @@ export function HomeScreen() {
             </Pressable>
           </View>
           <View style={styles.bannerArt}>
-            <Ionicons name="car-sport" size={64} color={colors.inkSoft} />
+            <Icon name="car-sport" size={64} color={colors.inkSoft} />
           </View>
         </View>
 
         <View style={[styles.banner, styles.bannerAlt]}>
           <View style={styles.bannerArt}>
-            <Ionicons name="people" size={48} color={colors.paper} />
+            <Icon name="people" size={48} color={colors.paper} />
           </View>
           <View style={styles.bannerLeft}>
             <Text style={[styles.bannerTitle, { color: colors.paper }]}>{b.promo2Title}</Text>

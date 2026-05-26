@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { useI18n } from '../../i18n';
 import { useBooking } from '../context';
 import { formatBookingDate } from '../format';
@@ -32,13 +32,13 @@ export function SearchSheet() {
     <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
       <View style={styles.container}>
         <Pressable style={styles.close} onPress={() => setSearchOpen(false)}>
-          <Ionicons name="close" size={22} color={colors.ink} />
+          <Icon name="close" size={22} color={colors.ink} />
         </Pressable>
 
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.sectionLabel}>{b.pickupReturn}</Text>
           <Pressable style={styles.locationInput} onPress={() => openLocationPicker('pickup')}>
-            <Ionicons name="location-outline" size={20} color={colors.muted} />
+            <Icon name="location-outline" size={20} color={colors.muted} />
             <Text style={styles.locationText} numberOfLines={2}>
               {locationLabel}
             </Text>
@@ -52,7 +52,7 @@ export function SearchSheet() {
                 openLocationPicker('return');
               }}
             >
-              <Ionicons name="add" size={18} color={colors.muted} />
+              <Icon name="add" size={18} color={colors.muted} />
               <Text style={styles.linkText}>{b.differentReturn}</Text>
             </Pressable>
           ) : (
@@ -60,7 +60,7 @@ export function SearchSheet() {
               style={[styles.locationInput, { marginTop: spacing.md }]}
               onPress={() => openLocationPicker('return')}
             >
-              <Ionicons name="location-outline" size={20} color={colors.muted} />
+              <Icon name="location-outline" size={20} color={colors.muted} />
               <Text style={styles.locationText} numberOfLines={2}>
                 {displayReturn?.label ?? b.returnLocation}
               </Text>
@@ -74,7 +74,7 @@ export function SearchSheet() {
               <Text style={styles.colLabel}>{b.pickup}</Text>
               <View style={styles.dateBox}>
                 <Pressable style={styles.dateHalf}>
-                  <Ionicons name="calendar-outline" size={18} color={colors.muted} />
+                  <Icon name="calendar-outline" size={18} color={colors.muted} />
                   <Text style={styles.dateText}>{formatBookingDate(pickupDate, lang)}</Text>
                 </Pressable>
                 <View style={styles.innerDivider} />
@@ -85,7 +85,7 @@ export function SearchSheet() {
                     navigate('time-picker');
                   }}
                 >
-                  <Ionicons name="time-outline" size={18} color={colors.muted} />
+                  <Icon name="time-outline" size={18} color={colors.muted} />
                   <Text style={styles.dateText}>{pickupTime}</Text>
                 </Pressable>
               </View>
@@ -95,7 +95,7 @@ export function SearchSheet() {
               <Text style={styles.colLabel}>{b.return}</Text>
               <View style={styles.dateBox}>
                 <Pressable style={styles.dateHalf}>
-                  <Ionicons name="calendar-outline" size={18} color={colors.muted} />
+                  <Icon name="calendar-outline" size={18} color={colors.muted} />
                   <Text style={styles.dateText}>{formatBookingDate(returnDate, lang)}</Text>
                 </Pressable>
                 <View style={styles.innerDivider} />
@@ -106,7 +106,7 @@ export function SearchSheet() {
                     navigate('time-picker');
                   }}
                 >
-                  <Ionicons name="time-outline" size={18} color={colors.muted} />
+                  <Icon name="time-outline" size={18} color={colors.muted} />
                   <Text style={styles.dateText}>{returnTime}</Text>
                 </Pressable>
               </View>
@@ -119,7 +119,7 @@ export function SearchSheet() {
           <View style={styles.countryRow}>
             <Text style={styles.flag}>🇵🇹</Text>
             <Text style={styles.countryText}>Portugal</Text>
-            <Ionicons name="chevron-down" size={18} color={colors.muted} />
+            <Icon name="chevron-down" size={18} color={colors.muted} />
           </View>
         </ScrollView>
 

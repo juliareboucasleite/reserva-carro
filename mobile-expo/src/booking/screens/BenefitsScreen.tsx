@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../icons';
 import { useI18n } from '../../i18n';
 import { useBooking } from '../context';
 import { BrandLogo, DarkButton } from '../ui';
@@ -24,7 +24,7 @@ export function BenefitsScreen() {
 
         {items.map((item) => (
           <View key={item.title} style={styles.item}>
-            <Ionicons name="checkmark" size={20} color={colors.ink} />
+            <Icon name="checkmark" size={20} color={colors.ink} />
             <View style={{ flex: 1 }}>
               <Text style={styles.itemTitle}>{item.title}</Text>
               <Text style={styles.itemDesc}>{item.desc}</Text>
