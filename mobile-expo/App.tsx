@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, DataProvider, useAuth, useData } from './src/state';
 import { I18nProvider, useI18n } from './src/i18n';
@@ -33,13 +33,15 @@ const TAB_ORDER: Tab[] = [
 
 export default function App() {
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <DataProvider>
-          <Shell />
-        </DataProvider>
-      </AuthProvider>
-    </I18nProvider>
+    <SafeAreaProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <DataProvider>
+            <Shell />
+          </DataProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </SafeAreaProvider>
   );
 }
 
