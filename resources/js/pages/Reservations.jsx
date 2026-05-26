@@ -398,6 +398,7 @@ function NewReservationModal({
     const [trip, setTrip] = useState(preselectTrip || '');
     const [startDate, setStartDate] = useState(preselectStartDate || '');
     const [endDate, setEndDate] = useState(preselectEndDate || '');
+    const [error, setError] = useState('');
 
     React.useEffect(() => {
         if (open) {
@@ -405,19 +406,29 @@ function NewReservationModal({
             setTrip(preselectTrip || '');
             setStartDate(preselectStartDate || '');
             setEndDate(preselectEndDate || '');
+            setError('');
         }
     }, [open, preselectVehicle, preselectStartDate, preselectEndDate, preselectTrip]);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
         if (!vehicleId || !trip || !startDate) return;
         const resolvedEnd = endDate && endDate >= startDate ? endDate : startDate;
-        onCreate({
-            vehicleId: Number(vehicleId),
-            trip,
-            startDate,
-            endDate: resolvedEnd,
-        });
+        setError('');
+        try {
+            await onCreate({
+                vehicleId: Number(vehicleId),
+                trip,
+                startDate,
+                endDate: resolvedEnd,
+            });
+        } catch (err) {
+            setError(
+                err?.response?.data?.message ||
+                    err?.message ||
+                    'NÃ£o foi possÃ­vel criar a reserva.'
+            );
+        }
     };
 
     const operational = vehicles.filter((v) => v.operational);
@@ -465,6 +476,11 @@ function NewReservationModal({
                         />
                     </Field>
                 </div>
+                {error && (
+                    <p className="rounded-md border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                        {error}
+                    </p>
+                )}
                 <div className="flex justify-end gap-2 border-t border-border-soft pt-4">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         {t.common.cancel}

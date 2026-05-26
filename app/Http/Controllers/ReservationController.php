@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reservation;
-use App\Models\Vehicle;
 use App\Services\NotificationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class ReservationController extends Controller
@@ -26,7 +25,12 @@ class ReservationController extends Controller
             $query->where('requested_by', $user->id);
         }
 
-        return response()->json($query->orderByDesc('date')->orderByDesc('id')->get());
+        return response()->json(
+            $query
+                ->orderByRaw('COALESCE(start_date, date) DESC')
+                ->orderByDesc('id')
+                ->get()
+        );
     }
 
     public function store(Request $request): JsonResponse
@@ -34,12 +38,21 @@ class ReservationController extends Controller
         $data = $request->validate([
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'trip' => ['required', 'string', 'max:255'],
-            'date' => ['required', 'date'],
+            'start_date' => ['nullable', 'date', 'required_without:date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'date' => ['nullable', 'date', 'required_without:start_date'],
         ]);
+
+        $startDate = $data['start_date'] ?? $data['date'];
+        $endDate = $data['end_date'] ?? $startDate;
 
         $user = $request->user();
         $reservation = Reservation::create([
-            ...$data,
+            'vehicle_id' => $data['vehicle_id'],
+            'trip' => $data['trip'],
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'date' => $startDate,
             'requested_by' => $user->id,
             'team' => $user->team,
             'status' => Reservation::STATUS_PENDING,
@@ -64,13 +77,18 @@ class ReservationController extends Controller
             throw new AccessDeniedHttpException('Apenas pedidos pendentes podem ser aprovados.');
         }
 
+        $startDate = $reservation->periodStart()?->toDateString();
+        $endDate = $reservation->periodEnd()?->toDateString();
+
         $hasConflict = Reservation::where('vehicle_id', $reservation->vehicle_id)
-            ->whereDate('date', $reservation->date)
             ->where('id', '!=', $reservation->id)
             ->whereIn('status', [
                 Reservation::STATUS_APPROVED,
                 Reservation::STATUS_CHECKED_IN,
             ])
+            ->where(function (Builder $query) use ($startDate, $endDate) {
+                $this->applyOverlapConstraint($query, $startDate, $endDate);
+            })
             ->exists();
 
         if ($hasConflict) {
@@ -84,10 +102,14 @@ class ReservationController extends Controller
         DB::transaction(function () use ($reservation, &$rejectedIds) {
             $reservation->update(['status' => Reservation::STATUS_APPROVED]);
 
+            $startDate = $reservation->periodStart()?->toDateString();
+            $endDate = $reservation->periodEnd()?->toDateString();
             $competingReservations = Reservation::where('vehicle_id', $reservation->vehicle_id)
-                ->whereDate('date', $reservation->date)
                 ->where('id', '!=', $reservation->id)
                 ->where('status', Reservation::STATUS_PENDING)
+                ->where(function (Builder $query) use ($startDate, $endDate) {
+                    $this->applyOverlapConstraint($query, $startDate, $endDate);
+                })
                 ->get();
 
             foreach ($competingReservations as $competingReservation) {
@@ -237,6 +259,18 @@ class ReservationController extends Controller
                 'size' => $file->getSize(),
             ]);
         }
+    }
+
+    private function applyOverlapConstraint(Builder $query, ?string $startDate, ?string $endDate): void
+    {
+        if (! $startDate || ! $endDate) {
+            return;
+        }
+
+        $query->whereRaw(
+            'COALESCE(start_date, date) <= ? AND COALESCE(end_date, start_date, date) >= ?',
+            [$endDate, $startDate]
+        );
     }
 
     private function fresh(Reservation $reservation): Reservation

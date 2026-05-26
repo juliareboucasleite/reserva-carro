@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Reservation extends Model
 {
@@ -19,6 +20,8 @@ class Reservation extends Model
         'requested_by',
         'team',
         'trip',
+        'start_date',
+        'end_date',
         'date',
         'status',
         'driver',
@@ -32,6 +35,8 @@ class Reservation extends Model
     protected function casts(): array
     {
         return [
+            'start_date' => 'date',
+            'end_date' => 'date',
             'date' => 'date',
             'operational_confirmed' => 'boolean',
             'start_km' => 'integer',
@@ -57,5 +62,15 @@ class Reservation extends Model
     public function damages(): HasMany
     {
         return $this->hasMany(ReservationDamage::class);
+    }
+
+    public function periodStart(): ?Carbon
+    {
+        return $this->start_date ?? $this->date;
+    }
+
+    public function periodEnd(): ?Carbon
+    {
+        return $this->end_date ?? $this->start_date ?? $this->date;
     }
 }

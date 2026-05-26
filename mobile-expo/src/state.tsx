@@ -25,6 +25,8 @@ const STORAGE_KEYS = {
   authToken: 'reserva_carro_mobile_auth_token',
 } as const;
 
+const DEFAULT_API_BASE_URL = normalizeBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL ?? '');
+
 type AuthCtx = {
   booting: boolean;
   apiBaseUrl: string;
@@ -93,7 +95,7 @@ const DataContext = createContext<DataCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [booting, setBooting] = useState(true);
-  const [apiBaseUrl, setApiBaseUrlState] = useState('');
+  const [apiBaseUrl, setApiBaseUrlState] = useState(DEFAULT_API_BASE_URL);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
@@ -104,10 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           SecureStore.getItemAsync(STORAGE_KEYS.apiBaseUrl),
           SecureStore.getItemAsync(STORAGE_KEYS.authToken),
         ]);
-        if (storedBaseUrl) setApiBaseUrlState(normalizeBaseUrl(storedBaseUrl));
-        if (storedBaseUrl && storedToken) {
+        const resolvedBaseUrl = normalizeBaseUrl(storedBaseUrl || DEFAULT_API_BASE_URL);
+        if (resolvedBaseUrl) setApiBaseUrlState(resolvedBaseUrl);
+        if (resolvedBaseUrl && storedToken) {
           try {
-            const me = await api.me(storedBaseUrl, storedToken);
+            const me = await api.me(resolvedBaseUrl, storedToken);
             setToken(storedToken);
             setUser(me.user);
           } catch {

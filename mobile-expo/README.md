@@ -4,6 +4,8 @@ App móvel em Expo Go para consumir o backend Laravel deste repositório.
 
 ## O que já faz
 
+- ecrã inicial estilo app de reservas (pesquisa, menu, notificações, benefícios)
+- fluxo de pesquisa: local, datas/horários e formulário de procura
 - login com token móvel (`/mobile/auth/login`)
 - listagem de viaturas
 - listagem e detalhe de reservas
@@ -34,7 +36,15 @@ cd mobile-expo
 npm start
 ```
 
-4. Abrir no `Expo Go` e, no ecrã inicial, indicar a URL da tua máquina:
+4. Opcionalmente, pré-configurar a app para não mostrar o bloco `API` no ecrã inicial:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://SEU_IP_LOCAL:8000
+```
+
+Podes colocar este valor num ficheiro `mobile-expo/.env`.
+
+5. Se não pré-configurares a variável, abre no `Expo Go` e indica a URL da tua máquina:
 
 ```text
 http://SEU_IP_LOCAL:8000

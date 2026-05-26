@@ -38,7 +38,7 @@ class VehicleController extends Controller
                 Reservation::STATUS_CHECKED_IN,
             ])
             ->with('requester:id,name')
-            ->orderBy('date')
+            ->orderByRaw('COALESCE(start_date, date)')
             ->get()
             ->groupBy('vehicle_id');
     }
@@ -69,6 +69,8 @@ class VehicleController extends Controller
             'availability' => $availability,
             'active_reservation' => $active ? [
                 'id' => $canSeeRequester ? $active->id : null,
+                'start_date' => $active->periodStart()?->toDateString(),
+                'end_date' => $active->periodEnd()?->toDateString(),
                 'date' => $active->date?->format('Y-m-d'),
                 'status' => $active->status,
                 'requester_name' => $canSeeRequester ? $active->requester?->name : null,

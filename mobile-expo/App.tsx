@@ -11,7 +11,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, DataProvider, useAuth, useData } from './src/state';
 import { I18nProvider, useI18n } from './src/i18n';
-import { LoginScreen } from './src/screens/Login';
+import { GuestShell } from './src/booking/GuestShell';
 import { DashboardScreen } from './src/screens/Dashboard';
 import { VehiclesScreen } from './src/screens/Vehicles';
 import { ReservationsScreen } from './src/screens/Reservations';
@@ -58,7 +58,7 @@ function Shell() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar style="dark" />
-      {user ? <AuthenticatedShell /> : <LoginScreen />}
+      {user ? <AuthenticatedShell /> : <GuestShell />}
     </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../state';
 import { useI18n } from '../i18n';
@@ -10,9 +10,15 @@ export function LoginScreen() {
   const { t } = useI18n();
   const { apiBaseUrl, setApiBaseUrl, login } = useAuth();
   const [urlInput, setUrlInput] = useState(apiBaseUrl);
+  const [showApiSettings, setShowApiSettings] = useState(!apiBaseUrl);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setUrlInput(apiBaseUrl);
+    if (!apiBaseUrl) setShowApiSettings(true);
+  }, [apiBaseUrl]);
 
   const saveUrl = async () => {
     const normalized = normalizeBaseUrl(urlInput);
@@ -22,6 +28,7 @@ export function LoginScreen() {
     }
     await setApiBaseUrl(normalized);
     setUrlInput(normalized);
+    setShowApiSettings(false);
   };
 
   const handleLogin = async () => {
@@ -47,23 +54,39 @@ export function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing['2xl'] }}>
-        <PageHeader kicker={t.auth.sessionActive} title={t.auth.title} subtitle={t.auth.subtitle} />
+        <PageHeader
+          kicker={t.auth.sessionActive}
+          title={t.auth.title}
+          subtitle={t.auth.subtitle}
+          action={
+            apiBaseUrl ? (
+              <Button
+                label={showApiSettings ? t.auth.hideApiSettings : t.auth.showApiSettings}
+                variant="ghost"
+                size="sm"
+                onPress={() => setShowApiSettings((current) => !current)}
+              />
+            ) : undefined
+          }
+        />
 
-        <Card style={{ marginBottom: spacing.lg }}>
-          <View style={{ marginBottom: spacing.md }}>
-            <Kicker>API</Kicker>
-          </View>
-          <Field label={t.auth.apiBaseUrl} hint={t.auth.apiBaseUrlHint}>
-            <Input
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={urlInput}
-              onChangeText={setUrlInput}
-              placeholder="http://192.168.1.10:8000"
-            />
-          </Field>
-          <Button label={t.auth.saveApi} variant="secondary" onPress={saveUrl} />
-        </Card>
+        {showApiSettings ? (
+          <Card style={{ marginBottom: spacing.lg }}>
+            <View style={{ marginBottom: spacing.md }}>
+              <Kicker>API</Kicker>
+            </View>
+            <Field label={t.auth.apiBaseUrl} hint={t.auth.apiBaseUrlHint}>
+              <Input
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={urlInput}
+                onChangeText={setUrlInput}
+                placeholder="http://192.168.1.10:8000"
+              />
+            </Field>
+            <Button label={t.auth.saveApi} variant="secondary" onPress={saveUrl} />
+          </Card>
+        ) : null}
 
         <Card>
           <Field label={t.auth.email}>

@@ -16,12 +16,22 @@ export const colors = {
   warnSoft: '#fffbeb',
   positive: '#047857',
   positiveSoft: '#ecfdf5',
+  brandGreen: '#1e8449',
+  brandGreenDark: '#145a32',
+  brandOrange: '#ff6b00',
+  brandYellow: '#f5c518',
+  headerDark: '#0d1f14',
+  headerMid: '#143d24',
+  focusBlue: '#2563eb',
 };
 
 export const radii = {
   sm: 4,
   md: 6,
   lg: 8,
+  xl: 12,
+  '2xl': 16,
+  pill: 999,
 };
 
 export const spacing = {
