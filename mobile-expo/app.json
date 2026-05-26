@@ -34,7 +34,8 @@
           "photosPermission": "Permitir acesso às fotografias para anexar provas do estado da viatura.",
           "cameraPermission": "Permitir acesso à câmara para registar a frente, laterais e traseira da viatura."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

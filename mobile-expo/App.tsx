@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { loadIconFont } from './src/icons';
 import { AuthProvider, DataProvider, useAuth, useData } from './src/state';
 import { I18nProvider, useI18n } from './src/i18n';
 import { GuestShell } from './src/booking/GuestShell';
@@ -47,6 +48,10 @@ export default function App() {
 
 function Shell() {
   const { booting, user } = useAuth();
+
+  useEffect(() => {
+    loadIconFont().catch(() => undefined);
+  }, []);
 
   if (booting) {
     return (
